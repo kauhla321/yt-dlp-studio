@@ -7,7 +7,7 @@ import { AlertIcon, CheckIcon, DownloadIcon } from "./ui/icons";
 import type { ToolName } from "@/types";
 
 export function SystemBanner({ onReady }: { onReady?: () => void } = {}) {
-  const { system, installs, install } = useTools(onReady);
+  const { system, installs, installing, verificationError, install } = useTools(onReady);
 
   if (!system) {
     return null;
@@ -47,7 +47,10 @@ export function SystemBanner({ onReady }: { onReady?: () => void } = {}) {
       <p className="break-all font-mono text-[11px] text-ink-faint">Tools folder: {system.binDir}</p>
       {missing.map(({ tool, label, reason }) => {
         const st = installs?.[tool];
-        const busy = st?.state === "downloading" || st?.state === "extracting";
+        const busy =
+          installing === tool ||
+          st?.state === "downloading" ||
+          st?.state === "extracting";
         const errored = st?.state === "error";
         return (
           <div key={tool} className="space-y-2">
@@ -79,6 +82,11 @@ export function SystemBanner({ onReady }: { onReady?: () => void } = {}) {
             )}
             {errored && (
               <p className="rounded-lg bg-danger/10 px-3 py-2 text-xs text-danger">{st?.message}</p>
+            )}
+            {verificationError?.tool === tool && (
+              <p className="rounded-lg bg-danger/10 px-3 py-2 text-xs text-danger">
+                {verificationError.message}
+              </p>
             )}
           </div>
         );

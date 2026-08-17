@@ -1,57 +1,47 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { api } from "@/lib/client";
-import type { SystemStatus, ToolInstallStatus, ToolName } from "@/types";
+import { useEffect, useRef, useSyncExternalStore } from "react";
+import {
+  subscribe,
+  getSnapshot,
+  ensureInitialized,
+  refresh,
+  install as installTool,
+} from "@/lib/tools/status-store";
+import type { ToolName } from "@/types";
 
 /**
- * Shared tool-status hook: tracks system probe + per-tool install progress,
- * and starts/polls installs. Used by the system banner and settings page.
+ * Shared tool-status hook: reads the app-wide tool store (one probe + one
+ * install poll loop shared by the Sidebar, SystemBanner and ToolsSection), so
+ * an install started anywhere is visible everywhere without navigation or an
+ * app restart.
  */
 export function useTools(onReady?: () => void) {
-  const [system, setSystem] = useState<SystemStatus | null>(null);
-  const [installs, setInstalls] = useState<Record<ToolName, ToolInstallStatus> | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // getSnapshot doubles as the server snapshot: the store is module state
+  // without DOM access, so SSR renders the neutral "checking" state and the
+  // first client effect kicks off the probe.
+  const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
-  const refresh = useCallback(async () => {
-    try {
-      const res = await api.tools();
-      setSystem(res.system);
-      setInstalls(res.installs);
-      return res;
-    } catch {
-      setSystem(null);
-      return null;
-    }
+  // Probe once per app session; the store stays warm across navigations.
+  useEffect(() => {
+    ensureInitialized();
   }, []);
 
+  // Notify callers when the install they were watching settles (done/error).
+  const prevInstalling = useRef<ToolName | null>(state.installing);
   useEffect(() => {
-    refresh();
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, [refresh]);
+    if (prevInstalling.current && !state.installing && onReady) onReady();
+    prevInstalling.current = state.installing;
+  }, [state.installing, onReady]);
 
-  const install = useCallback(
-    async (tool: ToolName) => {
-      try {
-        await api.installTool(tool);
-      } catch {
-        /* errors surface via polled status */
-      }
-      if (pollRef.current) clearInterval(pollRef.current);
-      pollRef.current = setInterval(async () => {
-        const res = await refresh();
-        const st = res?.installs[tool].state;
-        if (st === "done" || st === "error") {
-          if (pollRef.current) clearInterval(pollRef.current);
-          pollRef.current = null;
-          if (st === "done") onReady?.();
-        }
-      }, 1000);
-    },
-    [refresh, onReady]
-  );
-
-  return { system, installs, refresh, install };
+  return {
+    system: state.system,
+    installs: state.installs,
+    /** Tool currently being installed (shared across all consumers). */
+    installing: state.installing,
+    /** Client-side verification failure (downloaded but never detected). */
+    verificationError: state.verificationError,
+    refresh,
+    install: installTool,
+  };
 }

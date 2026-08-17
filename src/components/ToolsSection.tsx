@@ -7,7 +7,7 @@ import { TerminalIcon, DownloadIcon, RefreshIcon, CheckIcon } from "./ui/icons";
 import type { ToolName } from "@/types";
 
 export function ToolsSection() {
-  const { system, installs, install } = useTools();
+  const { system, installs, installing, verificationError, install } = useTools();
 
   // Never collapse to nothing — the binary installer must always be reachable
   // from Settings, even while the first probe is in flight.
@@ -56,7 +56,10 @@ export function ToolsSection() {
       <div className="space-y-3">
         {rows.map((r) => {
           const st = installs?.[r.tool];
-          const busy = st?.state === "downloading" || st?.state === "extracting";
+          const busy =
+            installing === r.tool ||
+            st?.state === "downloading" ||
+            st?.state === "extracting";
           return (
             <div key={r.tool} className="rounded-xl border border-border bg-canvas/50 px-4 py-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -105,6 +108,11 @@ export function ToolsSection() {
               {st?.state === "error" && (
                 <p className="mt-2 rounded-lg bg-danger/10 px-3 py-2 text-xs text-danger">
                   {st.message}
+                </p>
+              )}
+              {verificationError?.tool === r.tool && (
+                <p className="mt-2 rounded-lg bg-danger/10 px-3 py-2 text-xs text-danger">
+                  {verificationError.message}
                 </p>
               )}
             </div>

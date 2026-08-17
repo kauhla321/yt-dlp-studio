@@ -114,7 +114,7 @@ yt-dlpinterface/
 │   │   ├── ToolsSection.tsx       settings-page tool installer
 │   │   ├── hooks/
 │   │   │   ├── useProgress.ts     global SSE subscription (per-job map)
-│   │   │   └── useTools.ts        system probe + install polling
+│   │   │   └── useTools.ts        thin wrapper over the tool status store (see §5.8)
 │   │   └── ui/
 │   │       ├── primitives.tsx     Button, Toggle, Badge, OptionRow, SectionTitle, cn
 │   │       └── icons.tsx          inline Lucide-style SVG icons
@@ -131,7 +131,9 @@ yt-dlpinterface/
 │   │   │   └── system.ts          environment probe (tools + Firefox)
 │   │   ├── tools/
 │   │   │   ├── paths.ts           binary resolution & install locations
-│   │   │   └── installer.ts       in-app download/install of yt-dlp & ffmpeg
+│   │   │   ├── installer.ts       in-app download/install of yt-dlp & ffmpeg
+│   │   │   ├── status-store.ts    shared client store: probe + install polling (see §5.8)
+│   │   │   └── status-store.test.ts  unit tests for the store state machine
 │   │   ├── queue/manager.ts       download queue (singleton, concurrency)
 │   │   ├── progress/emitter.ts    process-wide progress event bus
 │   │   ├── store/                 disk persistence
@@ -529,11 +531,12 @@ produces a clear "move the app somewhere writable" error otherwise.
 step by step:
 
 1. **Entry point.** The user clicks *Install* (or *Update*) on a tool — in
-   the `SystemBanner` (Download screen) or `ToolsSection` (Settings). The
-   `useTools().install()` hook POSTs `{ tool: "ytdlp" | "ffmpeg" }` to
-   `/api/tools`, which returns `202` immediately; the install runs in the
-   **background** (`void runInstall(tool).catch(...)`) and never blocks a
-   request.
+   the `SystemBanner` (Download screen), the `ToolsSection` (Settings), or
+   via the sidebar status panel. All of them read one shared client store
+   (`src/lib/tools/status-store.ts`, consumed through `useTools()`), whose
+   `install()` POSTs `{ tool: "ytdlp" | "ffmpeg" }` to `/api/tools`, which
+   returns `202` immediately; the install runs in the **background**
+   (`void runInstall(tool).catch(...)`) and never blocks a request.
 
 2. **Pre-flight guards** (`startInstall`):
    - non-Windows → error state *"Automatic install is only available on
@@ -569,18 +572,30 @@ step by step:
      `done` at 100%;
    - the temp dir is always removed in a `finally` block.
 
-6. **Progress reporting.** Install state lives in an in-memory singleton
-   (`globalThis.__ytp_installer_state__`, so it survives dev hot reloads):
-   `{ tool, state: idle|downloading|extracting|done|error, percent, message, path }`.
-   The UI polls `GET /api/tools` **every 1 second** while a tool is busy,
-   rendering a live progress bar + status message, and stops polling at
-   `done`/`error`. Any failure (HTTP error, `ffmpeg.exe` missing from the
-   archive, unwritable folder) lands in `message` and renders as a red
-   error box.
+6. **Progress reporting & verification.** Install state lives in an
+   in-memory singleton (`globalThis.__ytp_installer_state__`, so it survives
+   dev hot reloads): `{ tool, state: idle|downloading|extracting|done|error,
+   percent, message, path }`. On the client, the shared `status-store.ts`
+   owns the poll loop: it polls `GET /api/tools` **every 1 second** while a
+   tool is busy and renders a live progress bar + status message on every
+   surface at once — Settings row, home banner, sidebar panel — because they
+   all subscribe to the same store (an install started anywhere updates
+   everywhere; no navigation or restart needed). Polling stops only when the
+   server reports `done` **and** the system probe confirms the binary is
+   actually detectable; a brand-new exe can fail its first probe (Defender
+   scan / PyInstaller first-run extraction), so the store keeps polling
+   through a 45 s grace window and then surfaces a *"downloaded but could
+   not be verified"* error instead of freezing. `GET /api/tools` caches the
+   (subprocess-based) probe for ~2 s and skips probing entirely while an
+   install is mid-flight — the binary cannot have appeared yet — forcing a
+   fresh probe the moment the install completes. Any failure (HTTP error,
+   `ffmpeg.exe` missing from the archive, unwritable folder) lands in
+   `message` and renders as a red error box.
 
-7. **Resolution afterwards.** The next `resolveTool()` probe finds the new
-   binary via rule 2 (app folder) — the install target and the lookup path
-   are deliberately the same place. *Update* is the identical flow: it
+7. **Resolution afterwards.** The system probe (`getSystemStatus` — the
+   same probe the poll loop uses to verify completion) finds the new binary
+   via rule 2 (app folder) — the install target and the lookup path are
+   deliberately the same place. *Update* is the identical flow: it
    re-downloads the latest release over the existing binary (no version
    comparison). Note that rule 2 **beats** rule 3 (system `PATH`), so once
    installed via the button, the app always uses the freshly installed
@@ -708,8 +723,9 @@ Library UI ──POST /api/playlists {id}──▶ queueManager.resumePlaylist(i
 UI ──POST /api/tools {tool}──▶ startInstall()  (win32 + writable check)
                                 ├─ yt-dlp: stream exe from GitHub latest release
                                 └─ ffmpeg:  stream BtbN zip (85%) → extract ffmpeg.exe+ffprobe.exe (100%)
-UI ──GET /api/tools (poll 1s)──▶ install state {downloading|extracting|done|error, percent, message}
-                                 └─ stop polling at done/error; banner switches to "Environment ready"
+UI ◀─GET /api/tools (poll 1s; probe cached 2s and skipped while busy)── install state
+     shared status-store loop ──▶ stops only when done AND the probe detects the binary
+     (sidebar, banner and Settings render the same live state; no navigation needed)
 ```
 
 ---

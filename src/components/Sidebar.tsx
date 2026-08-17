@@ -11,6 +11,7 @@ import {
   TerminalIcon,
   CheckIcon,
   AlertIcon,
+  LoaderIcon,
 } from "./ui/icons";
 
 const NAV = [
@@ -21,7 +22,7 @@ const NAV = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { system } = useTools();
+  const { system, installs, installing } = useTools();
 
   return (
     <aside className="flex w-16 shrink-0 flex-col items-center gap-2 border-r border-white/10 bg-panel/70 py-5 backdrop-blur-xl lg:w-[260px] lg:items-stretch lg:px-3">
@@ -65,15 +66,19 @@ export function Sidebar() {
       </nav>
 
       {/* System Ready status panel */}
-      <SystemStatusPanel system={system} />
+      <SystemStatusPanel system={system} installs={installs} installing={installing} />
     </aside>
   );
 }
 
 function SystemStatusPanel({
   system,
+  installs,
+  installing,
 }: {
   system: ReturnType<typeof useTools>["system"];
+  installs: ReturnType<typeof useTools>["installs"];
+  installing: ReturnType<typeof useTools>["installing"];
 }) {
   // Until the first probe resolves, `system` is null — show a neutral
   // "checking" state rather than implying anything is missing.
@@ -81,6 +86,11 @@ function SystemStatusPanel({
   const ytdlp = system?.ytdlp.available ?? false;
   const ffmpeg = system?.ffmpeg.available ?? false;
   const ready = ytdlp && ffmpeg;
+
+  const busyFor = (tool: "ytdlp" | "ffmpeg"): boolean => {
+    const st = installs?.[tool]?.state;
+    return installing === tool || st === "downloading" || st === "extracting";
+  };
 
   const body = (
     <>
@@ -100,8 +110,8 @@ function SystemStatusPanel({
             <AlertIcon className="h-3.5 w-3.5 text-warn" />
           ))}
       </div>
-      <StatusRow label="yt-dlp" ok={ytdlp} probed={probed} />
-      <StatusRow label="ffmpeg" ok={ffmpeg} probed={probed} />
+      <StatusRow label="yt-dlp" ok={ytdlp} probed={probed} busy={busyFor("ytdlp")} />
+      <StatusRow label="ffmpeg" ok={ffmpeg} probed={probed} busy={busyFor("ffmpeg")} />
       {probed && !ready && (
         <p className="mt-2.5 flex items-center gap-1 text-[11px] font-medium text-salmon">
           Install missing tools →
@@ -131,19 +141,41 @@ function SystemStatusPanel({
   );
 }
 
-function StatusRow({ label, ok, probed }: { label: string; ok: boolean; probed: boolean }) {
+function StatusRow({
+  label,
+  ok,
+  probed,
+  busy,
+}: {
+  label: string;
+  ok: boolean;
+  probed: boolean;
+  busy: boolean;
+}) {
   return (
     <div className="flex items-center gap-2 py-0.5 font-mono text-xs text-ink-muted">
       {!probed ? (
         <span className="h-4 w-4 shrink-0 rounded-full border border-ink-faint/40" />
+      ) : busy ? (
+        <LoaderIcon className="h-4 w-4 shrink-0 animate-spin text-warn" />
       ) : ok ? (
         <CheckIcon className="h-4 w-4 shrink-0 text-accent" />
       ) : (
         <AlertIcon className="h-4 w-4 shrink-0 text-warn" />
       )}
       <span className="flex-1">{label}</span>
-      <span className={!probed ? "text-ink-faint" : ok ? "text-accent" : "text-warn"}>
-        {!probed ? "…" : ok ? "OK" : "missing"}
+      <span
+        className={
+          !probed
+            ? "text-ink-faint"
+            : busy
+              ? "text-warn"
+              : ok
+                ? "text-accent"
+                : "text-warn"
+        }
+      >
+        {!probed ? "…" : busy ? "installing…" : ok ? "OK" : "missing"}
       </span>
     </div>
   );
