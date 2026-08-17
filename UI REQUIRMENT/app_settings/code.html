@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Settings - yt-dlp Studio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#060e20",
+                        "on-background": "#dae2fd",
+                        "secondary-container": "#03c6b2",
+                        "on-secondary-container": "#004d44",
+                        "on-error": "#690005",
+                        "surface-container-low": "#131b2e",
+                        "on-secondary-fixed-variant": "#005047",
+                        "tertiary-container": "#8292aa",
+                        "inverse-on-surface": "#283044",
+                        "secondary-fixed": "#62fae3",
+                        "on-secondary": "#003731",
+                        "surface": "#0b1326",
+                        "background": "#0b1326",
+                        "on-primary-fixed-variant": "#92002a",
+                        "inverse-surface": "#dae2fd",
+                        "on-tertiary": "#213145",
+                        "error": "#ffb4ab",
+                        "error-container": "#93000a",
+                        "on-surface-variant": "#e3bdbf",
+                        "surface-container": "#171f33",
+                        "on-primary-fixed": "#40000d",
+                        "on-primary": "#67001b",
+                        "surface-bright": "#31394d",
+                        "on-tertiary-container": "#1a2b3e",
+                        "primary": "#ffb2b7",
+                        "primary-fixed": "#ffdadb",
+                        "primary-container": "#ff516a",
+                        "tertiary-fixed": "#d3e4fe",
+                        "on-tertiary-fixed": "#0b1c30",
+                        "inverse-primary": "#bc0b3b",
+                        "on-secondary-fixed": "#00201c",
+                        "surface-tint": "#ffb2b7",
+                        "secondary": "#44e2cd",
+                        "on-primary-container": "#5b0017",
+                        "surface-container-highest": "#2d3449",
+                        "primary-fixed-dim": "#ffb2b7",
+                        "tertiary": "#b7c8e1",
+                        "on-tertiary-fixed-variant": "#38485d",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#b7c8e1",
+                        "outline-variant": "#5b4041",
+                        "outline": "#aa888a",
+                        "on-surface": "#dae2fd",
+                        "secondary-fixed-dim": "#3cddc7",
+                        "surface-variant": "#2d3449",
+                        "surface-container-high": "#222a3d",
+                        "surface-dim": "#0b1326"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "32px",
+                        "container-max": "1440px",
+                        "base": "8px",
+                        "sidebar-width": "260px"
+                    },
+                    "fontFamily": {
+                        "body-dense": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "title-sm": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "mono-spec": ["JetBrains Mono"],
+                        "body-base": ["Inter"],
+                        "headline-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-dense": ["13px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "label-caps": ["11px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "title-sm": ["18px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "mono-spec": ["12px", { "lineHeight": "1.4", "fontWeight": "500" }],
+                        "body-base": ["15px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "1.2", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+            border-right: 1px solid rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen font-body-base overflow-x-hidden flex">
+<!-- SideNavBar -->
+<nav class="bg-surface/70 backdrop-blur-xl font-body-base text-body-base fixed left-0 top-0 h-screen w-sidebar-width border-r border-white/10 hidden md:flex flex-col py-gutter z-40">
+<div class="px-6 mb-8 flex items-center gap-3">
+<img alt="Application Logo" class="w-8 h-8 rounded" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAQAElEQVR4AeycC3Bc1XnHv3N39bCwpF3LkhaDaxNLWooxtpsGZzCOCSUhJODizASXFgqUuLjttDzigBkMBBLqOJjXDE0dlyS0ZEJMkkkCJpDiPDDmOQmWnXjCyjLYQIyeXmnlhx67e/OdjaTI1uru6z7P/e/s3Xv3nnO+c77f9/317b0rSSMnHzOaamobmj4ZijRfG25sWRdqjD4SikSfCkVadoQaW/aFG6MD4UhUx6YwA46xjLWMebixZWuIc4D36/j9NTI3iHPEyRS1XSA19fOaGMJNocaWn4fKAj2aFviZIO3bJMQGIeg/BNHnBIllQogmEjSd8FCbAMdYxlrGnIS4QnAO8H4Dv39c5obMEc6V7aHG6I0yd+yGYYdAAqFI0wX8E+GBUCQaCwSC+xjCQ0KIC4WgMrsdxnzeIiBzRAjxN0LQwwHOHZlDoUjLJs6p5exJgDdLn1YKRGNHrglFovsFBX4pSNwiiFoIDxAogYDMIUHiC4ICv+Lcag83RK8iIsvy2BLDXA5XhBujuwWJxwXRHHYATxAwnQDn1lyWxhOca63hSPNnTJ+ADZoqkJrG5iXhxpZXuRz+hASdzfbxBAHrCQhaQKRtCzdGd1Y3zDvPzAlNEcj0SNNZocaWZwJCe40vsD5q5gJhCwTyJiBoaVALvhxqjD49vXGeKT+gSxZIqKHl6qCu7RFCXJq3I+gIAhYSEIIuC1KgNRRpvq7UaUoRiGClfllo4v+EEJbfTSjVUYz3FwGZk4K0b4UiLfcQkaAiH8UKpIwn/oEQtL7IeTEMBGwhIEjcFYpEtxKdVV7MhAULpLr6zLpwpOUXPPFni5nQlDEwAgIFEBD85XMokvr/6uqWmQUMy3QtSCC1jdEzAlXpN4jE+YQHCHiIAItkeaCKXqttaP5QIcvOXyAzo9X8kep5IURBExSyGPQFASsJcO7O0zTtp4X8fle+AhHhIH2fVYhvwq2MIGzbQSAaLte+xxNxOvNrjmdeAgk3NG9gOxfzhicIKEBAXDKa0zl9ySkQvu64njTttpyWFOkAN3xCgHO6NhK9Ipe3hgKRX9tzHfrvXEbQDgJeJKCR/nh1Q3Sp0dqnFMi0GU2nB7TAj4XAr6QbAUSblwmIaQFN/5HM9am8mFIgFWXao4JE/VQDcR4EVCAgc1zm+lS+ZBWILDtCiL+dahDOg4BKBGSuhxui52TzKatAAhrdl60zzpVEAIPdTECjr2Vb3iSBhCJNFwii5dk64xwIKEzgYpn7J/s3SSCCtC8THiDgSwKBL53s9gkCCTW0XE74PSvCw58E5CenmvropyZ6f4JA+GLl3omNOAYBvxHQNP2rE30eF0iovnkRZf62d2Izjr1BAKs0iwAXiYXVdS1njtkbF4jQxAmlZawD9iDgNwLBIPGlBmUe4wLhd+Mn+RhPEPAzgXEtZARySv3ciE50rp+JwHcQGCMgtVA1c86p8n1GIEFRdjl/9uKLeHkKGwj4m4DUQplWnvlNkoxANE0bLyn+RgPvJxHw6YkxTWg0M1rNJeXjPuUAt0EgK4GMJmY01Wg1gdR8/mxV1L9EyWoZJ0FAAQJSEzVldBZ/L6JFFPAHLoCA6QQ0XYtoJMRc0y3DIAioQIC1oQk9jQqiQjA96IPblyy1wVVEQCBujxTW5wgBXRP8EYvwEcsR+pjU9QQEsUAEESqI60OFBTpBQNd1riD84sTkmBME3E6Ai8dceRer1u0LxfpAoEAC5nQXolYzxxKsgICaBCAQNeMKr0wiAIGYBBJm1CQAgagZV3hlEgEIxCSQMKMmgckCUdNPeAUCRRGAQIrChkF+IQCB+CXS8LMoAhBIUdgwyC8EIBC/RBp+FkXAVoEUtUIMAgEHCUAgDsLH1O4nAIG4P0ZYoYMEIBAH4WNq9xOAQNwfI6zQQQKqCKQkhOWLo1Sz+rNU/9BaijzxFZq17RE6fftmX23SZ+m7ZFDzzyupfGFLSUxVGexbgegBjU65bDlFtn6VGu6/mWpWfZIqFjRR8NSZpFVWqBLfvP2QPkvfJYOaKy6mhgduociTG6jq0+eTZJW3IcU6+lIgwTNOo8g376bwjVdSsC6kWEjNcydYH6YZt1xFkcfuouDcWeYZ9pAl3wmk8vxF1PjobVR2eqOHwuTsUstmR6jh0XVUed45zi7Egdl9JZDKJQuo7u4bSFTgXxEXmmtaZTnV3fMvLJKFhQ71dH/fCKSMP1bV3bWahBAFBgzdxwgIIajujut99XHLHwLROLBfQuUYS/RS9rL61t25uhQTnhrrC4FUXbqMgqc1eCowbl5s2ZxTM3e33LxGs9amvEDEtEqq/ccVefE6+sLr1HPvFjr0uVvp/YvW+GqTPkvfJYN8YNVex0z5uiSfvl7uo7xAKpctokBoumGMkof7qWvtgxTf+G0a3PEmpeMJw/4qNkqfpe+SQfetj5BkYuRnIFxD05YuMuqiRJvyAqlY0JwzUIfv2ULDrW05+5newaUGh978PcU3fCvn6srnz8vZx+sdlBdIcLbx9x1Htu2g4b37vR5H09c/tCtGR55/2dBu2ZyIYbsKjeoLpM74m/LjO1tViKMlPhx/yZhNYEatJfO6yajyAgnUhw15D//+bcN2PzeOtL9n6L4GgRjy8USjCAYM16kfHTRs93NjurfP0P3AKdMM21VoVL6CqBCkYnzAGHMIQCDmcIQVRQlAIIoGFm6ZQwACMYcjrChKAAJRNLBwyxwCEIg5HP1kxVe+QiC+CjecLZQABFIoMfT3FQEIxFfhhrOFEoBACiVWZP/Ns5poRiBY5GgMc4oABGIT+c9U19Ev5p5Dn54+w6YZvTiN+9YMgdgYk7pgGX3jtGZCNbEReolTQSAlAixmOKpJMdScGQOBOMOdUE0cAl/gtBBIgcDM7o5qYjZRc+1BIObyLMoaqklR2AobVGRvCKRIcFYMQzWxgmppNiGQ0viZPhrVxHSkJRmEQErCZ91gVBPr2BZiGQIphJbNfVFNbAaeZToIJAsUt51CNXEuIvkIxLnVYeZxAqgm4yhsPYBAbMVd+mSoJqUzLMQCBFIILZf0RTWxLxAQiH2sTZ8J1cR0pJMMQiCTkHjrBKqJtfFyWCDWOucn66gm1kQbArGGqyNWUU3Mxw6BmM/UcYuoJuaFAAIxjyUsKUgAAlEwqM8O9NKFB/bQT48cVtA7e11SVyD2cnTFbL3JEbrhD/tozaF2OpxKumJNXl8EBOL1CI6uH1VjFITJOwjEZKB2m0PVsJY4BGItX0uto2pYijdjHALJYPDWC6qGffGCQIpg7eQQVA176UMg9vIuejZUjaLRlTQQAikJnz2DUTXs4ZxtFggkGxWXnEPVcD4QEIjzMci6AlSNrFhsPwmB2I7ccEJC1TDmY3crBGI3cYP5UDUM4DjUBIE4BH7itKgaE2m46xgCcTgeqBoOByDH9BBIDkBWNaNqWEXWXLsQiLk887LmTNXIa2nodBIBCOQkIFa+RdWwkq41tiEQa7hOsoqqMQmJJ05AIDaFCX/lZxNok6eBQEwGCnNqEYBA1IqnM94oPCsEonBw4VrpBCCQ0hnCgsIEIBCFgwvXSicAgZTOEBYUJgCBKBxcFVxz2gcIxOkIYH5XE4BAXB0eLM5pAsoLJH180JCxFq4xbPdzozaj1tD9VA62hoM90qi+QOIDhqEob55t2O7nxvImYzbpwwnl8SgvkGTcOIhVl5yvfJCLdXD6yo8bDk339hu2u7wxr+UpL5CRtoOGIKqWLaaKxVHDPn5srDzvHKr8yHxD14diBwzbVWhUXiDHd+7KGafw7f9EFX91Zs5+fulQ8eG/pPDNV+V0d3Bna84+Xu+gvECGd++j4YOHDOMU5IvR+q/dROHbrqNKrihaqNqwv4qNgfowTVv+4QyD+o03UiDHzYvhd/5Aw3v3q4jiBJ+UF4j0NvG/2+Qu53bKJ5bQzLtvoFk/uJ9O377ZV9upT26gujtXk2SQExR3SDz+NL+q//SFQAZ3vEkjBz9QP5o2eTi8/30afHm3TbM5O01xAnF2zUXNfvg/v0n60HBRYzHozwQkw8P3PfbnE4of+UYgI/xTr/cr/gmsFXmr6zpJhsl3O6ww70qbvhGIpD/46h7quevrlB5EJZE8Ctlk5ehd/3WSDAsZ5/W+vhKIDNbgK3uo+9830sj7nfIttjwIjLzXQZ3/uoEGX/9tHr3V6uI7gcjwjfAtyo7r76H4w9+lZG+fPIUtC4Fkd5ziD32HOj5/LyV9epPDdQLJEidLTolUmo5u20Edq9ZR19oHKfH9F2jot+2U/KCHP4INWTKnm42mB4cyvksGiadeyDDpuPJ2OvrsTpKs3Lx2K9fmW4FMhDrc2kaJb/yQum/eRB1Xr6dDl95I71+0xleb9Fn6LhkktvyQJJOJjPx6DIH4NfLwOy8CvhDIpxYvoqeXf4L2LlpG70WXuHrbu3gZbbvkMlr10B2u/CZ/1o8epJkPr6WKJQvySjCvd1JeIJf99WL6n2MVtLgjQTXH3X97t+bYMC18u4s2bd5OH2s1/k1kJ5JPq66iyrObqP6+f6PKpQudWIKtcyovkDVVdWNAPbe/eru7b6tWr7rYc0wLXbDyAjmjf7BQJq7pP6fD3begy/4i4hpWVi1EeYFYBQ52/UFAeYG8U1vp2UgejIRcvfYRH/xOlvIC2Xys19VJZrS4Jy5y952iga0/M1q+Em3KC+SZX++i1VVDtCtSQ4lp5RYFzTyziapy2v2hBlq75iLasWiOeYZNspQeOEaDv2un7jv+yxd/E6K8QGRePL+rlVa8+ALNb32JZsded/U2f9dLdOlzz9DWm+9z5Tf5h1beQj03baIhn/zioi8EIkWCDQSKIQCBFEMNY3xDAALxTajhaDEEIJBiqNk5BnM5SgACcRQ/Jnc7AY10Xf1/sOr2KGB97iTA2tBIiA53rg6rAgGHCbA2NJ0IAnE4DpjenQSkNjSh6xCIO+Nj+aowgTEBqQ2uIPiIZYwJrX4loJPo0AShgvg1AeC3MQGpDU0XEIgxJrT6lYDUhpZOabgG8WsGwO8cBPQDWlIf3K3zI0dPNINAIQQ831cnGu5LBn6jHes5+IEgesPzHsEBEDCRAGvil9QTG9BGbf54dI8dCIAAE0in0xlNZASSTFLmDeEBAiBAfMWhJ/WRjCYyAhnobXuLucR4wxMEfE+AP169cbT7QObmVUYgGSKjJSVzjBcQcC0BWxaWqR5ypnGBpIQ+flI2YAMBvxKYeMkxLpBEZ/trpNMhv0KB3yAwSiA2esmReTsuEPkulabr5R4bCPiVQCpFN9GExwkCSXTHnteJXpzQjkMQ8A0BmftSAxMdPkEgsoGryB1yjw0E/EYglU7dfrLPkwQy0BV7me8D/+TkjngPAioTkDk/0NX+6sk+ThKI7JCk1HoekJLH2EBAdQIy15MinfWTU1aBHOnc/zsS9B3VwcA/EJAEBInHjnS075XHJ29ZBSI7ztECRwAAAs5JREFUJSn9Rd6/yxueIKAwAf295DF9/VQOTikQVlS3nkpdzgOP8YYnCChIQD+up/QVAwNtPVM5N6VA5IC+7vZdKT39eXmcY0MzCHiOQJrEtX3d+1qNFm4oEDkw0bnvSUqnN8pjbCCgDAHO6f6O2FO5/MkpEGkg3rXvdtL1Z+UxNhDwPgH9uUxO5+FIXgJhO3p8JP33RPpbfIwnCHiZQCw+nP47doC/OOfXHM98BUJ0uD2RTIrLuZLgf/nmgIpmlxLQ9f5kcmSFzOV8V5i/QNjiQE8sFk+J2fzFio3ftPPEeIJAiQQ4Z7fJ3B3oebutEFMFCSRjuCc20NfZthIX7hkaePEGgU2csyvkP2EodLmFC+RPM+h8kbOO9PQ/8Ae54T+dwisIuI2AfjxNtCreEZNfenOqFr6+YgWSmSneue+7qXTqAvyhVQYHXtxEQKcPKC0+ms+tXKNllyQQaVj+BmR68PjZOukPsERRTSQUbI4RkDnIufgg5+T8eFdsT6kLKVkgcgH9/e/G+zra1hKJKF8Meedv2wkPVQhw3rEu9O8R5yDn4hdkTpIJD1MEMraOvo63DvDF0MpkOrmUlfzrsfPYg4CVBGSu6anUR+KdbVfKHDRzLlMFMrawga79r/R1xM6VF0is7HfGzmMPAmYSkLmV0nUWRezc/p79vzHT9pgtSwQyalzv74g9xRWlmVL6Mj53P2/453QMAc/iCXC1kN9jbOKc+pjMrURnG3+s4ttExZs0HGmlQMYmTsW723byrbZbeTszlUo2c2XhW8T0Cv8E4MOxbtiDwGQCnCMpFsWLelpfK3OHP5lEOY++yDn1EvdO8Wbp0w6BnOBAont/O1eWjfHO2NK+zuA06TQDuJABXKPrdCfp+hYi/Tne7+UtccJgD73BUvMkoOsJjvPe0ZhvkTnAV9vXypyQucE5UsWiuKCvq+0BmTt5WjWt2x8BAAD//7FbLeYAAAAGSURBVAMARZ3Y27eDrIkAAAAASUVORK5CYII="/>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-on-surface">yt-dlp Studio</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant">Expert-Tier Utility</p>
+</div>
+</div>
+<div class="flex-1 space-y-2">
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-white/5 transition-colors hover:bg-white/10 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="download">download</span>
+                Download
+            </a>
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-white/5 transition-colors hover:bg-white/10 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="video_library">video_library</span>
+                Library
+            </a>
+<a class="flex items-center gap-3 px-4 py-2 text-primary border-l-4 border-primary bg-white/5 scale-95 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+                Settings
+            </a>
+</div>
+<div class="mt-auto px-6 pt-4 border-t border-white/10 space-y-4">
+<div class="font-label-caps text-label-caps text-on-surface-variant mb-2">System Ready</div>
+<div class="flex items-center gap-2 text-secondary font-mono-spec text-mono-spec">
+<span class="material-symbols-outlined text-[16px]" data-icon="check_circle">check_circle</span>
+                yt-dlp
+             </div>
+<div class="flex items-center gap-2 text-secondary font-mono-spec text-mono-spec">
+<span class="material-symbols-outlined text-[16px]" data-icon="check_circle">check_circle</span>
+                ffmpeg
+             </div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-sidebar-width flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="bg-surface/70 backdrop-blur-xl font-title-sm text-title-sm border-b border-white/10 flex justify-between items-center h-16 px-margin-desktop sticky top-0 z-30">
+<div class="font-headline-md text-headline-md font-bold text-primary">Settings</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors scale-98 transition-transform">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors scale-98 transition-transform">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+</div>
+</header>
+<!-- Settings Canvas -->
+<div class="flex-1 p-margin-desktop max-w-container-max mx-auto w-full space-y-8 pb-32">
+<!-- Section: Binary Tools -->
+<section class="glass-panel rounded-xl p-6 space-y-6">
+<h2 class="font-title-sm text-title-sm text-on-surface border-b border-white/10 pb-2">Binary Tools</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="bg-surface-container-high rounded-lg p-4 border border-white/5 flex flex-col gap-3">
+<div class="flex justify-between items-center">
+<span class="font-body-base text-body-base font-semibold">yt-dlp</span>
+<span class="px-2 py-1 bg-secondary/10 text-secondary rounded font-mono-spec text-mono-spec text-[10px]">Up to date</span>
+</div>
+<div class="font-mono-spec text-mono-spec text-on-surface-variant truncate bg-surface-container-lowest p-2 rounded">/usr/local/bin/yt-dlp</div>
+<div class="flex justify-between items-center mt-2">
+<span class="font-label-caps text-label-caps text-on-surface-variant">v2023.11.16</span>
+<button class="bg-secondary/10 text-secondary hover:bg-secondary/20 px-3 py-1.5 rounded text-sm transition-colors font-medium">Update</button>
+</div>
+</div>
+<div class="bg-surface-container-high rounded-lg p-4 border border-white/5 flex flex-col gap-3">
+<div class="flex justify-between items-center">
+<span class="font-body-base text-body-base font-semibold">ffmpeg</span>
+<span class="px-2 py-1 bg-secondary/10 text-secondary rounded font-mono-spec text-mono-spec text-[10px]">Found</span>
+</div>
+<div class="font-mono-spec text-mono-spec text-on-surface-variant truncate bg-surface-container-lowest p-2 rounded">/usr/bin/ffmpeg</div>
+<div class="flex justify-between items-center mt-2">
+<span class="font-label-caps text-label-caps text-on-surface-variant">v6.0-static</span>
+<button class="bg-secondary/10 text-secondary hover:bg-secondary/20 px-3 py-1.5 rounded text-sm transition-colors font-medium">Update</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Section: Paths -->
+<section class="glass-panel rounded-xl p-6 space-y-6">
+<h2 class="font-title-sm text-title-sm text-on-surface border-b border-white/10 pb-2">Download Paths</h2>
+<div class="space-y-4">
+<div class="flex flex-col md:flex-row gap-4 items-end">
+<div class="flex-1 w-full space-y-2">
+<label class="font-body-dense text-body-dense text-on-surface-variant block">Default Download Folder (Single Videos)</label>
+<input class="w-full bg-surface-container-lowest border border-white/10 rounded-lg p-3 font-mono-spec text-mono-spec text-on-surface focus:outline-none focus:border-secondary shadow-inner" readonly="" type="text" value="~/Movies/yt-dlp"/>
+</div>
+<button class="bg-surface-bright text-on-surface hover:bg-white/10 px-4 py-3 rounded-lg border border-white/10 transition-colors whitespace-nowrap h-[46px]">Browse</button>
+</div>
+<div class="flex flex-col md:flex-row gap-4 items-end">
+<div class="flex-1 w-full space-y-2">
+<label class="font-body-dense text-body-dense text-on-surface-variant block">Playlist Folder</label>
+<input class="w-full bg-surface-container-lowest border border-white/10 rounded-lg p-3 font-mono-spec text-mono-spec text-on-surface focus:outline-none focus:border-secondary shadow-inner" readonly="" type="text" value="~/Movies/yt-dlp/Playlists/%(playlist)s"/>
+</div>
+<button class="bg-surface-bright text-on-surface hover:bg-white/10 px-4 py-3 rounded-lg border border-white/10 transition-colors whitespace-nowrap h-[46px]">Browse</button>
+</div>
+</div>
+</section>
+<!-- Section: Behavior -->
+<section class="glass-panel rounded-xl p-6 space-y-6">
+<h2 class="font-title-sm text-title-sm text-on-surface border-b border-white/10 pb-2">Behavior</h2>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-4 bg-surface-container-high rounded-lg border border-white/5">
+<div>
+<div class="font-body-base text-body-base font-semibold">Cookie Mode</div>
+<div class="font-body-dense text-body-dense text-on-surface-variant">Extract cookies from browser (Firefox) to access premium content</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-container-lowest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary border border-white/10 peer-checked:after:border-surface"></div>
+</label>
+</div>
+<div class="flex items-center justify-between p-4 bg-surface-container-high rounded-lg border border-white/5">
+<div>
+<div class="font-body-base text-body-base font-semibold">Embed Subtitles</div>
+<div class="font-body-dense text-body-dense text-on-surface-variant">Automatically download and embed best available subtitles</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-container-lowest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary border border-white/10 peer-checked:after:border-surface"></div>
+</label>
+</div>
+<div class="flex items-center justify-between p-4 bg-surface-container-high rounded-lg border border-white/5">
+<div>
+<div class="font-body-base text-body-base font-semibold">Download Archive</div>
+<div class="font-body-dense text-body-dense text-on-surface-variant">Keep track of downloaded videos to avoid duplicates</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-container-lowest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary border border-white/10 peer-checked:after:border-surface"></div>
+</label>
+</div>
+</div>
+</section>
+<!-- Section: System -->
+<section class="glass-panel rounded-xl p-6 space-y-6">
+<h2 class="font-title-sm text-title-sm text-on-surface border-b border-white/10 pb-2">System</h2>
+<div class="flex justify-between items-center">
+<div class="font-body-dense text-body-dense text-on-surface-variant">Reset all application settings to their factory defaults. This action cannot be undone.</div>
+<button class="bg-primary-container text-on-primary-container hover:bg-primary-container/80 px-6 py-2.5 rounded-lg font-medium transition-colors whitespace-nowrap">Reset to Defaults</button>
+</div>
+</section>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-low font-mono-spec text-mono-spec fixed bottom-0 right-0 w-[calc(100%-260px)] border-t border-white/5 flex justify-between items-center px-margin-desktop py-2 z-50 transition-opacity">
+<div class="text-secondary">v2023.11.16 | High-Performance Media Management</div>
+<div class="flex gap-4">
+<a class="text-on-surface-variant hover:text-secondary" href="#">Documentation</a>
+<a class="text-on-surface-variant hover:text-secondary" href="#">Changelog</a>
+<a class="text-on-surface-variant hover:text-secondary" href="#">GitHub</a>
+</div>
+</footer>
+</body></html>

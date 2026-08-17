@@ -1,0 +1,6 @@
+This document serves as the technical and product roadmap, covering:
+
+Core Objectives: Highlighting accessibility, transparency, and reliability.
+Feature Specs: Detail on the "Analyze & Download" engine, advanced media handling (Cookie Mode, Subtitles), and the playlist resume system.
+Technical Architecture: Outlining the Next.js/Electron stack, Server-Sent Events (SSE) for real-time progress, and the automated binary management system for yt-dlp and ffmpeg.
+Design Specifications: Documenting the "Studio Precision" visual language, including the specific color tokens (#2DD4BF Teal and #F43F5E Salmon) and typography.
