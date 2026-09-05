@@ -151,7 +151,6 @@ yt-dlpinterface/
 │   ├── playlists.json
 │   └── archives/<hash>.txt        yt-dlp --download-archive files
 ├── release/                       electron-builder output (built exe)
-├── UI REQUIRMENT/                 design specs & mockups (product brief, DESIGN.md)
 ├── next.config.js                 standalone output, remote images
 ├── tailwind.config.ts             "Studio Precision" design tokens
 └── package.json                   scripts, dependencies, electron-builder config
@@ -641,8 +640,7 @@ Covered in §4.1. Notable details:
 `Badge` (6 tones), `OptionRow` (radio rows), `SectionTitle`, `ProgressBar`
 (status-colored, animated sheen while active), inline SVG icon set.
 
-**"Studio Precision" design system** (`tailwind.config.ts`, `globals.css`,
-spec in `UI REQUIRMENT/studio_precision/DESIGN.md`):
+**"Studio Precision" design system** (`tailwind.config.ts`, `globals.css`):
 
 - **Palette**: deep blue-charcoal canvas (`#0b1326`), raised panels
   (`#141d31`/`#222a3d`), **teal accent** `#2DD4BF` for system/status/progress,
@@ -911,9 +909,6 @@ Dev tips:
   sits in the repo root), else system PATH; `YTP_BIN_DIR` can redirect.
 - The queue manager, progress bus, and installer state are singletons on
   `globalThis` — they intentionally survive Next.js hot reloads.
-- Design specs and mockups live under `UI REQUIRMENT/` (product brief,
-  `studio_precision/DESIGN.md`, per-screen HTML mockups) — the implemented UI
-  follows them closely.
 
 ---
 

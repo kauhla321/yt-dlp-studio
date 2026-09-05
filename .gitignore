@@ -41,3 +41,6 @@ tsconfig.tsbuildinfo
 # agent tooling (not project content)
 /.claude/
 /.codewhale/
+
+# internal design scratch (kept out of the public repo)
+/UI REQUIRMENT/
