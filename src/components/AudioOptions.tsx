@@ -1,14 +1,13 @@
 "use client";
 
-import { OptionRow, SectionTitle, Badge } from "./ui/primitives";
-import { MusicIcon } from "./ui/icons";
+import { OptionRow, SectionTitle } from "./ui/primitives";
 import { formatBytes } from "@/lib/utils/format-bytes";
 import type { AudioFormat } from "@/types";
 
 const FORMATS: { value: AudioFormat; label: string; note: string }[] = [
-  { value: "mp3", label: "MP3", note: "universal · lossy" },
-  { value: "wav", label: "WAV", note: "uncompressed · lossless" },
-  { value: "aac", label: "AAC", note: "efficient · lossy" },
+  { value: "mp3", label: "mp3", note: "universal · lossy" },
+  { value: "wav", label: "wav", note: "lossless · large" },
+  { value: "aac", label: "aac", note: "efficient · lossy" },
 ];
 
 export function AudioOptions({
@@ -21,33 +20,26 @@ export function AudioOptions({
   estimatedBytes: number | null;
 }) {
   return (
-    <section className="panel animate-fade-in p-4 sm:p-5">
-      <SectionTitle
-        icon={<MusicIcon className="h-4 w-4" />}
-        title="Audio Only"
-        hint="extracted with ffmpeg after download"
-      />
-      <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Audio format">
+    <section aria-label="audio format" className="flex flex-col gap-2">
+      <SectionTitle title="audio format" hint="extracted with ffmpeg after download" />
+      <div className="grid grid-cols-3 gap-1.5 rounded-card bg-surface p-1.5" role="radiogroup" aria-label="Audio format">
         {FORMATS.map((f) => (
           <OptionRow
             key={f.value}
             selected={selected === f.value}
             onSelect={() => onSelect(f.value)}
+            className="h-auto py-3.5"
           >
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-sm font-semibold text-ink">{f.label}</span>
-                {f.value === "wav" && <Badge tone="info">large</Badge>}
-              </div>
-              <p className="mt-0.5 text-[11px] text-ink-muted">{f.note}</p>
-            </div>
+            <span className="flex flex-col items-start gap-1.5">
+              <span className="text-base font-bold">{f.label}</span>
+              <span className={selected === f.value ? "text-xs text-black/70" : "text-xs text-ink-muted"}>
+                {f.note}
+              </span>
+              <span className="text-xs">{estimatedBytes ? `~${formatBytes(estimatedBytes)}` : "—"} source audio</span>
+            </span>
           </OptionRow>
         ))}
       </div>
-      <p className="mt-2.5 font-mono text-[11px] text-ink-faint">
-        yt-dlp -x --audio-format {selected ?? "mp3"}
-        {estimatedBytes ? ` · ~${formatBytes(estimatedBytes)} source audio` : ""}
-      </p>
     </section>
   );
 }

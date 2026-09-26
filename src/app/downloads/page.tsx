@@ -3,17 +3,23 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/client";
-import { Button, Badge, cn } from "@/components/ui/primitives";
+import { Button, cn } from "@/components/ui/primitives";
 import { ProgressBar } from "@/components/ProgressBar";
-import {
-  RefreshIcon,
-  TrashIcon,
-  FolderIcon,
-  CheckIcon,
-  AlertIcon,
-  PlayIcon,
-} from "@/components/ui/icons";
-import type { HistoryEntry, PlaylistState } from "@/types";
+import { RefreshIcon, PlayIcon, VideoCamIcon, NoteIcon, SubsGlyphIcon, PlaylistIcon } from "@/components/ui/icons";
+import type { DownloadType, HistoryEntry, PlaylistState } from "@/types";
+
+const TYPE_TINT: Record<DownloadType, { bg: string; fg: string; Icon: typeof VideoCamIcon }> = {
+  video: { bg: "#3a2e0a", fg: "#ffcf56", Icon: VideoCamIcon },
+  audio: { bg: "#2a1f45", fg: "#b18cff", Icon: NoteIcon },
+  subtitles: { bg: "#0f2940", fg: "#6cb6ff", Icon: SubsGlyphIcon },
+  playlist: { bg: "#1f1f1f", fg: "#e1e1e1", Icon: PlaylistIcon },
+};
+
+const STATUS_COLOR: Record<string, string> = {
+  completed: "#5fd38d",
+  failed: "#ff6b6b",
+  interrupted: "#ffcf56",
+};
 
 export default function DownloadsPage() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -62,162 +68,135 @@ export default function DownloadsPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:py-8">
-      <header className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-salmon">Library</h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            Download history and resumable playlists.
-          </p>
-        </div>
-        <Button variant="secondary" size="sm" icon={<RefreshIcon className="h-4 w-4" />} onClick={load}>
-          Refresh
-        </Button>
-      </header>
+    <div className="mx-auto flex w-full max-w-[880px] flex-col items-center px-4 py-9">
+      <div className="flex w-full max-w-[760px] flex-col gap-2.5">
+        <header className="flex items-center justify-between px-1 pb-1">
+          <h1 className="text-[22px] font-semibold">library</h1>
+          <Button variant="secondary" icon={<RefreshIcon className="h-3.5 w-3.5" />} onClick={load}>
+            refresh
+          </Button>
+        </header>
 
-      {/* Resume section */}
-      {interrupted.length > 0 && (
-        <section className="mb-8">
-          <h2 className="mb-3 text-sm font-semibold text-ink">Resume playlists</h2>
-          <div className="space-y-3">
-            {interrupted.map((p) => {
-              const remaining = Math.max(0, p.total - p.completed);
-              const pct = p.total > 0 ? (p.completed / p.total) * 100 : 0;
-              return (
-                <div key={p.id} className="panel p-4">
-                  <div className="mb-2 flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-ink">{p.title}</p>
-                      <p className="mt-0.5 text-xs text-ink-muted">
-                        {p.completed} of {p.total || "?"} completed
-                        {p.total ? ` · ${remaining} remaining` : ""}
-                      </p>
+        {interrupted.length > 0 && (
+          <>
+            <div className="px-1 text-[13px] font-semibold">resume</div>
+            <div className="flex flex-col gap-2.5">
+              {interrupted.map((p) => {
+                const remaining = Math.max(0, p.total - p.completed);
+                const pct = p.total > 0 ? (p.completed / p.total) * 100 : 0;
+                return (
+                  <article key={p.id} className="flex flex-col gap-3 rounded-card border border-warn-border bg-warn-bg p-4">
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-video-tint text-video">
+                        <PlaylistIcon className="h-3.5 w-3.5" />
+                      </span>
+                      <div className="flex flex-1 flex-col gap-0.5">
+                        <span className="text-sm font-semibold">{p.title}</span>
+                        <span className="text-xs text-ink-muted">
+                          {p.completed} of {p.total || "?"} done · {remaining} left · interrupted{" "}
+                          {new Date(p.updatedAt).toLocaleString()}
+                        </span>
+                      </div>
                     </div>
-                    <Badge tone="warn">
-                      <AlertIcon className="h-3 w-3" /> Interrupted
-                    </Badge>
-                  </div>
-                  <ProgressBar percent={pct} status="interrupted" />
-                  <div className="mt-3 flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      icon={<PlayIcon className="h-4 w-4" />}
-                      loading={resuming === p.id}
-                      onClick={() => resume(p.id)}
-                    >
-                      Resume Download
-                    </Button>
-                    <Link href="/">
-                      <Button size="sm" variant="ghost">
-                        Start Over
+                    <ProgressBar percent={pct} status="interrupted" />
+                    <div className="flex gap-2">
+                      <Button icon={<PlayIcon className="h-3 w-3" />} loading={resuming === p.id} onClick={() => resume(p.id)}>
+                        resume
                       </Button>
-                    </Link>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
+                      <Link href="/">
+                        <Button variant="secondary">start over</Button>
+                      </Link>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </>
+        )}
 
-      {/* History */}
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-ink">History</h2>
+        <div className="mt-2 flex items-baseline justify-between px-1">
+          <span className="text-[13px] font-semibold">history</span>
           {history.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={<TrashIcon className="h-4 w-4" />}
+            <button
+              type="button"
               onClick={async () => {
                 await api.clearHistory();
                 load();
               }}
+              className="h-7 cursor-pointer rounded-[8px] px-2 text-xs text-ink-muted hover:text-ink"
             >
-              Clear
-            </Button>
+              clear all
+            </button>
           )}
         </div>
 
         {loading ? (
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <div className="skeleton h-16 w-full" />
             <div className="skeleton h-16 w-full" />
           </div>
         ) : history.length === 0 ? (
-          <div className="panel p-10 text-center">
-            <p className="text-sm text-ink-muted">No downloads yet.</p>
+          <div className="rounded-control border border-dashed border-[#2b2b2b] p-6 text-center text-[12.5px] text-ink-muted">
+            nothing here yet.
           </div>
         ) : (
-          <div className="space-y-2">
-            {history.map((h) => (
-              <HistoryRow key={h.id} entry={h} retrying={retrying === h.id} onRetry={() => retry(h)} />
+          <div className="flex flex-col rounded-card bg-surface p-1.5">
+            {history.map((h, i) => (
+              <HistoryRow key={h.id} entry={h} divider={i > 0} retrying={retrying === h.id} onRetry={() => retry(h)} />
             ))}
           </div>
         )}
-      </section>
+      </div>
     </div>
   );
 }
 
 function HistoryRow({
   entry,
+  divider,
   retrying,
   onRetry,
 }: {
   entry: HistoryEntry;
+  divider: boolean;
   retrying: boolean;
   onRetry: () => void;
 }) {
-  const tone =
-    entry.status === "completed" ? "success" : entry.status === "failed" ? "danger" : "warn";
+  const tint = TYPE_TINT[entry.type];
+  const Icon = tint.Icon;
+  const meta = [
+    entry.type,
+    new Date(entry.date).toLocaleDateString(undefined, { month: "short", day: "numeric" }) +
+      " " +
+      new Date(entry.date).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
+    entry.playlistTotal != null ? `${entry.playlistCompleted ?? 0}/${entry.playlistTotal} items` : null,
+    entry.outputLocation,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
-    <div className="panel flex items-center gap-3 p-3.5">
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-ink">{entry.title}</p>
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-muted">
-          <span>{new Date(entry.date).toLocaleString()}</span>
-          <span className="inline-flex items-center gap-1">
-            <FolderIcon className="h-3 w-3" />
-            <span className="max-w-[18rem] truncate font-mono">{entry.outputLocation}</span>
-          </span>
-          {entry.playlistTotal != null && (
-            <span>
-              {entry.playlistCompleted ?? 0}/{entry.playlistTotal} items
-            </span>
-          )}
-        </div>
+    <div className={cn("flex min-h-16 items-center gap-3 px-3 py-2.5", divider && "border-t border-raised")}>
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px]" style={{ background: tint.bg, color: tint.fg }}>
+        <Icon className="h-3.5 w-3.5" />
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="truncate text-[13px] font-medium">{entry.title}</span>
+        <span className="truncate text-[11.5px] text-ink-faint">{meta}</span>
       </div>
-      <div className="flex shrink-0 items-center gap-1.5">
+      <span className="w-[84px] shrink-0 text-xs" style={{ color: STATUS_COLOR[entry.status] }}>
+        {entry.status}
+      </span>
+      <div className="flex w-[130px] shrink-0 justify-end gap-1">
         {entry.status === "failed" && entry.request && (
-          <Button
-            size="sm"
-            variant="secondary"
-            icon={<RefreshIcon className="h-3.5 w-3.5" />}
-            loading={retrying}
-            onClick={onRetry}
-          >
-            Retry
+          <Button size="xs" loading={retrying} onClick={onRetry}>
+            retry
           </Button>
         )}
-        <Button
-          size="sm"
-          variant="ghost"
-          icon={<FolderIcon className="h-3.5 w-3.5" />}
-          onClick={() => void api.openPath(entry.outputLocation).catch(() => {})}
-        >
-          Open
+        <Button size="xs" variant="secondary" onClick={() => void api.openPath(entry.outputLocation).catch(() => {})}>
+          open
         </Button>
       </div>
-      <Badge tone="neutral">{entry.type}</Badge>
-      <Badge tone={tone}>
-        {entry.status === "completed" ? (
-          <CheckIcon className="h-3 w-3" />
-        ) : (
-          <AlertIcon className="h-3 w-3" />
-        )}
-        <span className={cn("capitalize")}>{entry.status}</span>
-      </Badge>
     </div>
   );
 }

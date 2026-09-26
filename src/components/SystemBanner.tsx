@@ -3,94 +3,82 @@
 import { Button } from "./ui/primitives";
 import { ProgressBar } from "./ProgressBar";
 import { useTools } from "./hooks/useTools";
-import { AlertIcon, CheckIcon, DownloadIcon } from "./ui/icons";
+import { ExclaimIcon } from "./ui/icons";
 import type { ToolName } from "@/types";
 
+/**
+ * Amber "setup required" box shown on the Download screen when a tool is
+ * missing. Renders nothing once tools are ready — the sidebar's "tools ok"
+ * tile and the footer version line cover that state instead.
+ */
 export function SystemBanner({ onReady }: { onReady?: () => void } = {}) {
   const { system, installs, installing, verificationError, install } = useTools(onReady);
 
-  if (!system) {
-    return null;
-  }
+  if (!system) return null;
 
   const missing: { tool: ToolName; label: string; reason: string }[] = [];
   if (!system.ytdlp.available) {
     missing.push({
       tool: "ytdlp",
       label: "yt-dlp",
-      reason: "Required to analyze and download anything.",
+      reason: "required to analyze and download anything.",
     });
   }
   if (!system.ffmpeg.available) {
     missing.push({
       tool: "ffmpeg",
       label: "ffmpeg",
-      reason: "Required for audio extraction and merging video quality.",
+      reason: "needed for audio extraction and merging video quality.",
     });
   }
 
-  if (missing.length === 0) {
-    return (
-      <div className="flex items-center gap-2 rounded-xl border border-accent/30 bg-accent/10 px-3 py-2 text-xs text-accent">
-        <CheckIcon className="h-4 w-4 shrink-0" />
-        <span>
-          Environment ready · yt-dlp {system.ytdlp.version ?? "?"} ({system.ytdlp.source})
-          {system.ffmpeg.version ? ` · ffmpeg ${system.ffmpeg.version}` : ""}
-          {system.firefox.available ? " · Firefox detected" : ""}
-        </span>
-      </div>
-    );
-  }
+  if (missing.length === 0) return null;
 
   return (
-    <div className="space-y-3 rounded-xl border border-warn/30 bg-warn/10 px-4 py-3">
-      <p className="break-all font-mono text-[11px] text-ink-faint">Tools folder: {system.binDir}</p>
+    <section aria-label="setup required" className="flex flex-col gap-2.5 rounded-card border border-warn-border bg-warn-bg p-4">
       {missing.map(({ tool, label, reason }) => {
         const st = installs?.[tool];
-        const busy =
-          installing === tool ||
-          st?.state === "downloading" ||
-          st?.state === "extracting";
+        const busy = installing === tool || st?.state === "downloading" || st?.state === "extracting";
         const errored = st?.state === "error";
         return (
-          <div key={tool} className="space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-start gap-2 text-sm text-warn">
-                <AlertIcon className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>
-                  <span className="font-semibold">{label}</span> not found. {reason}
-                </span>
+          <div key={tool} className="flex flex-col gap-2">
+            <div className="flex items-center gap-3">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-video-tint text-video">
+                <ExclaimIcon className="h-3.5 w-3.5" />
+              </span>
+              <div className="flex flex-1 flex-col gap-0.5">
+                <span className="text-[13px] font-semibold">{label} is missing</span>
+                <span className="text-xs text-ink-muted">{reason}</span>
               </div>
               {system.canInstall ? (
-                <Button
-                  size="sm"
-                  loading={busy}
-                  onClick={() => install(tool)}
-                  icon={!busy && <DownloadIcon className="h-4 w-4" />}
-                >
-                  {busy ? st?.message ?? "Installing…" : `Install ${label}`}
-                </Button>
+                busy ? (
+                  <span className="text-xs text-video">{st?.message ?? "installing…"}</span>
+                ) : (
+                  <Button size="sm" onClick={() => install(tool)}>
+                    install {label}
+                  </Button>
+                )
               ) : (
-                <span className="text-xs text-ink-muted">Install manually (non-Windows)</span>
+                <span className="text-xs text-ink-muted">install manually (non-windows)</span>
               )}
             </div>
-            {busy && (
-              <div>
-                <ProgressBar percent={st?.percent ?? 0} status="downloading" />
-                <p className="mt-1 text-[11px] text-ink-muted">{st?.message}</p>
-              </div>
-            )}
+            {busy && <ProgressBar percent={st?.percent ?? 0} status="interrupted" />}
             {errored && (
-              <p className="rounded-lg bg-danger/10 px-3 py-2 text-xs text-danger">{st?.message}</p>
+              <p className="rounded-control bg-danger-bg px-3 py-2 text-xs leading-relaxed text-danger-text">
+                {st?.message}
+              </p>
             )}
             {verificationError?.tool === tool && (
-              <p className="rounded-lg bg-danger/10 px-3 py-2 text-xs text-danger">
+              <p className="rounded-control bg-danger-bg px-3 py-2 text-xs leading-relaxed text-danger-text">
                 {verificationError.message}
               </p>
             )}
           </div>
         );
       })}
-    </div>
+      <p className="break-all text-[11px] text-ink-faint">
+        tools folder: {system.binDir} · also shown in the sidebar and settings
+      </p>
+    </section>
   );
 }

@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import { api } from "@/lib/client";
 import { useProgress } from "@/components/hooks/useProgress";
+import { useTools } from "@/components/hooks/useTools";
+import { api } from "@/lib/client";
 import { SystemBanner } from "@/components/SystemBanner";
 import { MetadataCard } from "@/components/MetadataCard";
 import { VideoOptions } from "@/components/VideoOptions";
@@ -11,8 +11,9 @@ import { AudioOptions } from "@/components/AudioOptions";
 import { SubtitleOptions, type SubtitleConfig } from "@/components/SubtitleOptions";
 import { PlaylistPanel, type PlaylistMode } from "@/components/PlaylistPanel";
 import { DownloadQueue } from "@/components/DownloadQueue";
-import { Button, Toggle, Badge } from "@/components/ui/primitives";
-import { SearchIcon, DownloadIcon, AlertIcon, RefreshIcon } from "@/components/ui/icons";
+import { ReadyCard, type PrimarySelection } from "@/components/CommandPreview";
+import { Button, IconButton, cn } from "@/components/ui/primitives";
+import { SearchIcon, AlertIcon, ArrowDownIcon, XIcon } from "@/components/ui/icons";
 import { isValidUrl } from "@/lib/utils/sanitize";
 import type {
   AnalysisResult,
@@ -23,10 +24,7 @@ import type {
   VideoQualityOption,
 } from "@/types";
 
-type Primary =
-  | { type: "video"; quality: VideoQualityOption }
-  | { type: "audio"; format: AudioFormat }
-  | { type: "subtitles" };
+type Mode = "video" | "audio" | "subs";
 
 // Persist the download screen across route changes (Next.js unmounts the page
 // when navigating to Settings, which would otherwise clear the entered URL and
@@ -36,12 +34,13 @@ const STORE_KEY = "ytp_home_state_v1";
 export default function HomePage() {
   const [url, setUrl] = useState("");
   const [cookieMode, setCookieMode] = useState(false);
+  const [mode, setMode] = useState<Mode>("video");
 
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<{ msg: string; hint?: string } | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
 
-  const [primary, setPrimary] = useState<Primary | null>(null);
+  const [primary, setPrimary] = useState<PrimarySelection | null>(null);
   const [subConfig, setSubConfig] = useState<SubtitleConfig>({
     langs: [],
     includeAuto: false,
@@ -53,8 +52,10 @@ export default function HomePage() {
   const [jobs, setJobs] = useState<QueueJob[]>([]);
   const [starting, setStarting] = useState(false);
   const [resumable, setResumable] = useState<PlaylistState[]>([]);
+  const [outputDirs, setOutputDirs] = useState({ video: "", playlist: "" });
 
   const { snapshots } = useProgress();
+  const { system } = useTools();
 
   // Restore the screen (url + analysis + selection) from a previous visit, then
   // mirror changes back so navigating away and returning keeps everything.
@@ -67,15 +68,17 @@ export default function HomePage() {
         const s = JSON.parse(raw) as {
           url?: string;
           analysis?: AnalysisResult | null;
-          primary?: Primary | null;
+          primary?: PrimarySelection | null;
           subConfig?: SubtitleConfig;
           playlistMode?: PlaylistMode;
+          mode?: Mode;
         };
         if (s.url) setUrl(s.url);
         if (s.analysis) setAnalysis(s.analysis);
         if (s.primary) setPrimary(s.primary);
         if (s.subConfig) setSubConfig(s.subConfig);
         if (s.playlistMode) setPlaylistMode(s.playlistMode);
+        if (s.mode) setMode(s.mode);
       }
     } catch {
       /* ignore corrupt/unavailable storage */
@@ -116,16 +119,22 @@ export default function HomePage() {
     try {
       sessionStorage.setItem(
         STORE_KEY,
-        JSON.stringify({ url, analysis, primary, subConfig, playlistMode })
+        JSON.stringify({ url, analysis, primary, subConfig, playlistMode, mode })
       );
     } catch {
       /* ignore quota/unavailable storage */
     }
-  }, [url, analysis, primary, subConfig, playlistMode]);
+  }, [url, analysis, primary, subConfig, playlistMode, mode]);
 
-  // Initial load: settings (cookie default), jobs, resumable playlists.
+  // Initial load: settings (cookie default + output dirs), jobs, resumable playlists.
   useEffect(() => {
-    api.settings().then((s) => setCookieMode(s.cookieModeDefault)).catch(() => {});
+    api
+      .settings()
+      .then((s) => {
+        setCookieMode(s.cookieModeDefault);
+        setOutputDirs({ video: s.videoOutputDir, playlist: s.playlistOutputDir });
+      })
+      .catch(() => {});
     refreshJobs();
     api
       .playlists()
@@ -147,7 +156,7 @@ export default function HomePage() {
 
   const handleAnalyze = useCallback(async () => {
     if (!isValidUrl(url)) {
-      setAnalyzeError({ msg: "Please enter a valid http(s) URL." });
+      setAnalyzeError({ msg: "please enter a valid http(s) url." });
       return;
     }
     setAnalyzing(true);
@@ -157,11 +166,17 @@ export default function HomePage() {
     try {
       const result = await api.analyze(url.trim(), cookieMode);
       setAnalysis(result);
-      // Sensible defaults.
-      if (result.metadata.kind === "video" && result.videoQualities.length > 0) {
-        setPrimary({ type: "video", quality: result.videoQualities[0]! });
-      } else if (result.metadata.kind === "playlist") {
-        setPlaylistMode({ kind: "best" });
+      if (result.metadata.kind === "video") {
+        if (mode === "audio") {
+          setPrimary({ type: "audio", format: "mp3" });
+        } else if (mode === "subs") {
+          setPrimary({ type: "subtitles" });
+        } else if (result.videoQualities.length > 0) {
+          setPrimary({ type: "video", quality: result.videoQualities[0]! });
+        }
+      } else {
+        // Playlists: audio maps to mp3, subtitles pre-selection doesn't apply.
+        setPlaylistMode(mode === "audio" ? { kind: "audio", format: "mp3" } : { kind: "best" });
       }
     } catch (err) {
       const e = err as Error & { hint?: string };
@@ -169,7 +184,33 @@ export default function HomePage() {
     } finally {
       setAnalyzing(false);
     }
-  }, [url, cookieMode]);
+  }, [url, cookieMode, mode]);
+
+  const pickMode = useCallback(
+    (m: Mode) => {
+      setMode(m);
+      if (!analysis || isPlaylist) return;
+      if (m === "video") {
+        if (primary?.type !== "video" && analysis.videoQualities.length > 0) {
+          setPrimary({ type: "video", quality: analysis.videoQualities[0]! });
+        }
+      } else if (m === "audio") {
+        if (primary?.type !== "audio") setPrimary({ type: "audio", format: "mp3" });
+      } else {
+        setPrimary({ type: "subtitles" });
+      }
+    },
+    [analysis, isPlaylist, primary]
+  );
+
+  const handlePaste = useCallback(async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) setUrl(text.trim());
+    } catch {
+      // Clipboard permission can be denied; ignore.
+    }
+  }, []);
 
   const buildRequest = useCallback((): DownloadRequest | null => {
     if (!analysis) return null;
@@ -245,187 +286,280 @@ export default function HomePage() {
     [refreshJobs]
   );
 
-  return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:py-8">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-salmon">Download</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          Paste a video or playlist URL, analyze it, then choose how to download.
-        </p>
-      </header>
+  const runningCount = jobs.filter((j) => {
+    const st = (snapshots[j.id] ?? j.progress).status ?? j.status;
+    return st === "downloading" || st === "processing";
+  }).length;
 
-      <div className="mb-4">
-        <SystemBanner />
+  const toolsBusy = !!system && playlistBlockedBy(system) !== null;
+  const cookiesDisabled = !!system && !system.firefox.available;
+
+  return (
+    <div className="mx-auto flex min-h-full w-full max-w-[880px] flex-col items-center px-4 pb-10 pt-3">
+      <div className="relative flex w-full items-center justify-end py-1.5">
+        <a
+          href="#queue"
+          aria-label={`download queue, ${runningCount} running`}
+          className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[#2b2b2b] bg-surface text-ink no-underline"
+        >
+          <ArrowDownIcon className="h-4 w-4" />
+          {runningCount > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-subs px-1 text-[10px] font-bold text-black">
+              {runningCount}
+            </span>
+          )}
+        </a>
       </div>
 
-      {resumable.length > 0 && (
-        <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-warn/30 bg-warn/10 px-4 py-3">
-          <div className="flex items-center gap-2 text-sm text-warn">
-            <AlertIcon className="h-4 w-4 shrink-0" />
-            <span>
-              {resumable.length} interrupted playlist
-              {resumable.length === 1 ? "" : "s"} can be resumed.
-            </span>
-          </div>
-          <Link href="/downloads">
-            <Button size="sm" variant="secondary" icon={<RefreshIcon className="h-4 w-4" />}>
-              Go to Library
-            </Button>
-          </Link>
-        </div>
-      )}
+      <div className="flex w-full max-w-[720px] flex-1 flex-col gap-2.5 pt-3">
+        {!analysis && <div className="flex-1" />}
 
-      {/* URL bar */}
-      <div className="panel p-4 sm:p-5">
-        <label htmlFor="url" className="mb-2 block text-xs font-medium text-ink-muted">
-          Video or playlist URL
+        <SystemBanner onReady={() => setAnalyzeError(null)} />
+
+        {resumable.length > 0 && (
+          <a
+            href="/downloads"
+            className="flex items-center gap-2.5 rounded-control bg-surface py-2.5 pl-4 pr-2.5 text-[13px] text-ink no-underline"
+          >
+            <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-video" />
+            <span className="flex-1">
+              {resumable.length} interrupted playlist{resumable.length === 1 ? "" : "s"} can be resumed
+            </span>
+            <span className="rounded-[8px] bg-raised px-2.5 py-1.5 text-xs">go to library →</span>
+          </a>
+        )}
+
+        <label htmlFor="url" className="sr-only">
+          video or playlist url
         </label>
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div
+          className={cn(
+            "flex h-11 items-center gap-2.5 rounded-control border bg-bg pl-3.5 focus-within:border-[#5a5a5a]",
+            url ? "border-[#5a5a5a] pr-1.5" : "border-input-border pr-3.5"
+          )}
+        >
+          <SearchIcon className="h-[15px] w-[15px] shrink-0 text-ink-muted" />
           <input
             id="url"
             type="url"
             inputMode="url"
-            placeholder="https://www.youtube.com/watch?v=..."
+            placeholder="paste the link here"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
-            className="input-field flex-1 font-mono"
+            className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink-faint"
           />
-          <div className="flex gap-2">
+          {url && (
+            <IconButton size={32} aria-label="clear" onClick={() => setUrl("")}>
+              <XIcon className="h-3.5 w-3.5" />
+            </IconButton>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between gap-3">
+          {isPlaylist ? (
+            <span className="px-1 text-xs text-ink-faint">playlist detected — pick a mode below</span>
+          ) : (
+            <ModeControl mode={mode} onChange={pickMode} />
+          )}
+          <div className="flex shrink-0 gap-2">
             <Button
-              onClick={handleAnalyze}
-              loading={analyzing}
-              icon={!analyzing && <SearchIcon className="h-4 w-4" />}
-              className="flex-1 sm:flex-none"
+              variant={cookieMode ? "primary" : "secondary"}
+              disabled={cookiesDisabled}
+              onClick={() => setCookieMode((v) => !v)}
             >
-              Analyze
+              cookies
             </Button>
-            <Button
-              variant="secondary"
-              onClick={handleDownload}
-              loading={starting}
-              disabled={!canDownload}
-              icon={!starting && <DownloadIcon className="h-4 w-4" />}
-              className="flex-1 sm:flex-none"
-            >
-              Download
+            <Button variant="secondary" onClick={handlePaste}>
+              paste
+            </Button>
+            <Button loading={analyzing} onClick={handleAnalyze}>
+              analyze
             </Button>
           </div>
         </div>
+        {!analysis && (
+          <p className="px-1 text-xs text-ink-faint">{modeHint(mode)} · press enter to analyze</p>
+        )}
 
-        <div className="mt-3">
-          <Toggle
-            id="cookie-mode"
-            checked={cookieMode}
-            onChange={setCookieMode}
-            label="Cookie Mode"
-            description="Use cookies from Mozilla Firefox for authenticated, age-restricted, or private downloads (--cookies-from-browser firefox)."
-          />
-        </div>
+        {cookieMode && analysis && (
+          <div className="flex items-center gap-2 px-1 text-xs text-ink-faint">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-done" />
+            <span>
+              cookies from firefox (profile detected) ·{" "}
+              <span className="text-ink-muted">--cookies-from-browser firefox</span> · close firefox
+              if its cookie file is locked
+            </span>
+          </div>
+        )}
 
         {analyzeError && (
-          <div className="mt-3 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3">
-            <div className="flex items-start gap-2 text-sm text-danger">
-              <AlertIcon className="mt-0.5 h-4 w-4 shrink-0" />
+          <div className="rounded-control bg-danger-bg px-3.5 py-3">
+            <div className="flex items-start gap-2 text-sm">
+              <AlertIcon className="mt-0.5 h-4 w-4 shrink-0 text-danger-text" />
               <div>
-                <p className="font-medium">{analyzeError.msg}</p>
-                {analyzeError.hint && (
-                  <p className="mt-1 text-xs text-danger/80">{analyzeError.hint}</p>
-                )}
+                <p className="font-medium text-danger-text">{analyzeError.msg}</p>
+                {analyzeError.hint && <p className="mt-1 text-xs text-ink-muted">{analyzeError.hint}</p>}
               </div>
             </div>
           </div>
         )}
-      </div>
 
-      {/* Analyzing skeleton */}
-      {analyzing && (
-        <div className="mt-4 space-y-3">
-          <div className="skeleton h-32 w-full" />
-          <div className="skeleton h-40 w-full" />
-        </div>
-      )}
-
-      {/* Results */}
-      {analysis && !analyzing && (
-        <div className="stagger mt-4 space-y-4">
-          <MetadataCard meta={analysis.metadata} />
-
-          {isPlaylist ? (
-            <PlaylistPanel
-              count={analysis.metadata.playlistCount}
-              mode={playlistMode}
-              onChange={setPlaylistMode}
-            />
-          ) : (
-            <>
-              <VideoOptions
-                qualities={analysis.videoQualities}
-                selectedId={primary?.type === "video" ? primary.quality.id : null}
-                onSelect={(q) => setPrimary({ type: "video", quality: q })}
-              />
-              <AudioOptions
-                selected={primary?.type === "audio" ? primary.format : null}
-                onSelect={(f) => setPrimary({ type: "audio", format: f })}
-                estimatedBytes={analysis.audioEstimatedBytes}
-              />
-              <SubtitleOptions
-                tracks={analysis.subtitles}
-                config={subConfig}
-                onChange={setSubConfig}
-                subtitlesOnly={primary?.type === "subtitles"}
-                onSubtitlesOnly={() => setPrimary({ type: "subtitles" })}
-                disabled={primary?.type === "audio"}
-              />
-            </>
-          )}
-
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-panel2/40 px-4 py-3">
-            <p className="text-xs text-ink-muted">
-              {selectionSummary(isPlaylist, primary, playlistMode, subConfig)}
-            </p>
-            <Button
-              onClick={handleDownload}
-              loading={starting}
-              disabled={!canDownload}
-              icon={!starting && <DownloadIcon className="h-4 w-4" />}
-            >
-              Start download
-            </Button>
+        {analyzing && (
+          <div className="flex flex-col gap-3">
+            <div className="skeleton h-[99px] w-full" />
+            <div className="skeleton h-32 w-full" />
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Active queue */}
-      <section className="mt-8">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-ink">Downloads</h2>
-          {jobs.length > 0 && <Badge tone="neutral">{jobs.length}</Badge>}
-        </div>
-        <DownloadQueue jobs={jobs} snapshots={snapshots} onCancel={handleCancel} />
-      </section>
+        {analysis && !analyzing && (
+          <div className="flex flex-col gap-2.5">
+            <MetadataCard
+              meta={analysis.metadata}
+              subtitleCount={isPlaylist ? undefined : analysis.subtitles.length}
+            />
+
+            {isPlaylist ? (
+              <>
+                <PlaylistPanel
+                  count={analysis.metadata.playlistCount}
+                  mode={playlistMode}
+                  onChange={setPlaylistMode}
+                  title={analysis.metadata.title}
+                  url={analysis.metadata.webpageUrl}
+                  outputDir={outputDirs.playlist}
+                />
+                <Button
+                  size="lg"
+                  className="w-full"
+                  disabled={!canDownload || toolsBusy}
+                  loading={starting}
+                  onClick={handleDownload}
+                >
+                  download {analysis.metadata.playlistCount ?? ""} items
+                </Button>
+                {toolsBusy && system && (
+                  <p className="text-center text-xs text-video">
+                    waiting for {playlistBlockedBy(system)} to finish installing
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                {mode === "video" && (
+                  <VideoOptions
+                    qualities={analysis.videoQualities}
+                    selectedId={primary?.type === "video" ? primary.quality.id : null}
+                    onSelect={(q: VideoQualityOption) => setPrimary({ type: "video", quality: q })}
+                  />
+                )}
+                {mode === "audio" && (
+                  <AudioOptions
+                    selected={primary?.type === "audio" ? primary.format : null}
+                    onSelect={(f: AudioFormat) => setPrimary({ type: "audio", format: f })}
+                    estimatedBytes={analysis.audioEstimatedBytes}
+                  />
+                )}
+                {mode === "subs" && (
+                  <div className="rounded-card bg-surface p-4 text-[13px] text-ink-muted">
+                    only the subtitle tracks you pick below are saved — no video or audio.{" "}
+                    <span className="text-ink">--skip-download</span>
+                  </div>
+                )}
+
+                <SubtitleOptions
+                  tracks={analysis.subtitles}
+                  config={subConfig}
+                  onChange={setSubConfig}
+                  embedOk={mode === "video"}
+                />
+
+                {primary ? (
+                  <ReadyCard
+                    primary={primary}
+                    subConfig={subConfig}
+                    cookieMode={cookieMode}
+                    analysis={analysis}
+                    outputDir={outputDirs.video}
+                    starting={starting}
+                    canDownload={canDownload}
+                    onDownload={handleDownload}
+                  />
+                ) : (
+                  <p className="rounded-card bg-surface px-4 py-3.5 text-sm text-ink-muted">
+                    {mode === "video"
+                      ? "no downloadable video formats were found for this url."
+                      : "pick a format above to continue."}
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        <section id="queue" aria-label="queue" className="mt-5 flex flex-col gap-2">
+          <div className="flex items-baseline justify-between px-1">
+            <span className="text-[13px] font-semibold">queue</span>
+            {jobs.length > 0 && (
+              <span className="text-xs text-ink-faint">
+                {runningCount} running · {jobs.filter((j) => ((snapshots[j.id] ?? j.progress).status ?? j.status) === "queued").length} waiting
+              </span>
+            )}
+          </div>
+          <DownloadQueue jobs={jobs} snapshots={snapshots} onCancel={handleCancel} />
+        </section>
+
+        {!analysis && system && (
+          <p className="mt-4 pb-2 text-center text-xs text-ink-faint">
+            runs <span className="text-ink">yt-dlp {system.ytdlp.version ?? "?"}</span> +{" "}
+            <span className="text-ink">ffmpeg {system.ffmpeg.version ?? "?"}</span> on this machine
+            {system.firefox.available ? " · firefox detected for cookies" : ""}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
 
-function selectionSummary(
-  isPlaylist: boolean,
-  primary: Primary | null,
-  playlistMode: PlaylistMode,
-  subs: SubtitleConfig
-): string {
-  if (isPlaylist) {
-    return playlistMode.kind === "best"
-      ? "Will download the best video+audio for every item."
-      : `Will extract ${playlistMode.format.toUpperCase()} audio for every item.`;
-  }
-  if (!primary) return "Select a video quality, audio format, or subtitles to continue.";
-  if (primary.type === "video") {
-    const extra = subs.langs.length > 0 ? ` + ${subs.langs.length} subtitle track(s)` : "";
-    return `Will download ${primary.quality.label} ${primary.quality.container.toUpperCase()} video${subs.embed ? " (embedded subs)" : ""}${extra}.`;
-  }
-  if (primary.type === "audio") return `Will extract ${primary.format.toUpperCase()} audio.`;
-  return subs.langs.length > 0
-    ? `Will download subtitles only (${subs.langs.join(", ")}).`
-    : "Select at least one subtitle language.";
+function modeHint(mode: Mode): string {
+  if (mode === "audio") return "opens on audio formats after analysis (playlists: mp3)";
+  if (mode === "subs") return "opens on subtitles only after analysis (single videos)";
+  return "opens on video quality after analysis";
+}
+
+/** Which tool (if any) a playlist download is currently blocked on. */
+function playlistBlockedBy(system: NonNullable<ReturnType<typeof useTools>["system"]>): string | null {
+  if (!system.ytdlp.available) return "yt-dlp";
+  if (!system.ffmpeg.available) return "ffmpeg";
+  return null;
+}
+
+function ModeControl({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void }) {
+  const items: { id: Mode; label: string }[] = [
+    { id: "video", label: "video" },
+    { id: "audio", label: "audio" },
+    { id: "subs", label: "subtitles" },
+  ];
+  return (
+    <div role="group" aria-label="download mode" className="flex overflow-hidden rounded-control bg-surface-2">
+      {items.map((it, i) => {
+        const on = it.id === mode;
+        return (
+          <button
+            key={it.id}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onChange(it.id)}
+            className={cn(
+              "flex h-[38px] cursor-pointer items-center px-3.5 text-sm font-medium transition-colors duration-150",
+              i < items.length - 1 && "border-r border-black",
+              on ? "bg-ink text-black" : "bg-transparent text-ink hover:bg-[#1a1a1a]"
+            )}
+          >
+            {it.label}
+          </button>
+        );
+      })}
+    </div>
+  );
 }

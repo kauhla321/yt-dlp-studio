@@ -152,7 +152,7 @@ yt-dlpinterface/
 │   └── archives/<hash>.txt        yt-dlp --download-archive files
 ├── release/                       electron-builder output (built exe)
 ├── next.config.js                 standalone output, remote images
-├── tailwind.config.ts             "Studio Precision" design tokens
+├── tailwind.config.ts             "mono night" design tokens
 └── package.json                   scripts, dependencies, electron-builder config
 ```
 
@@ -636,24 +636,32 @@ Covered in §4.1. Notable details:
   and the `ToolsSection` installer with per-tool install/update + live
   progress bars.
 
-**Shared pieces:** `Button` (4 variants, loading state), `Toggle`,
-`Badge` (6 tones), `OptionRow` (radio rows), `SectionTitle`, `ProgressBar`
-(status-colored, animated sheen while active), inline SVG icon set.
+**Shared pieces:** `Button` (4 variants, loading state), `IconButton`,
+`Switch`, `Segmented` (pill or grid layout), `Chip` (7 tones, `Badge` kept as
+a legacy alias), `OptionRow` (radio rows), `SectionTitle`, `Card`,
+`ProgressBar` (status-colored, animated sheen while active), inline SVG icon
+set.
 
-**"Studio Precision" design system** (`tailwind.config.ts`, `globals.css`):
+**"mono night" design system** (`tailwind.config.ts`, `globals.css`):
 
-- **Palette**: deep blue-charcoal canvas (`#0b1326`), raised panels
-  (`#141d31`/`#222a3d`), **teal accent** `#2DD4BF` for system/status/progress,
-  **salmon-pink** `#F43F5E` for actions/CTAs, plus info/warn/danger tones and
-  a cool near-white ink scale.
-- **Type**: Inter (UI) + JetBrains Mono (technical readouts: paths, sizes,
-  bitrates) loaded via `next/font`.
-- **Motion**: springy `ease-spring` interactions, staggered panel entrances,
-  per-navigation `page-in` animation (via `template.tsx`), animated aurora
-  gradient backdrop, progress-bar sheen, shimmer skeletons — all disabled by
-  `prefers-reduced-motion`.
-- Custom scrollbars, focus-visible rings, and component classes (`panel`,
-  `skeleton`, `stagger`, `card-hover`, `progress-sheen`).
+- **Palette**: pure-black canvas (`bg` `#000000`), `rail`/`surface` panels
+  (`#111111`), `surface-2` (`#161616`) and `raised` (`#1f1f1f`) for nested
+  groups/chips, an `ink` (`#e1e1e1`) text-and-selected-fill scale down to
+  `ink-muted`/`ink-faint`, plus per-type/status colors: `video` (`#ffcf56`),
+  `audio` (`#b18cff`), `subs` (`#6cb6ff`, also the focus-ring color), `done`
+  (`#5fd38d`) and `danger` (`#ff6b6b`), each with a dim tint background.
+- **Selected state (universal)**: `ink` fill + black text — the active rail
+  tile, the selected segment/option row, and the primary button all share it.
+- **Type**: IBM Plex Mono (400/500/600/700) for everything — UI copy,
+  metadata, paths, and progress readouts — loaded via `next/font`.
+- **Radius**: 11px controls (`rounded-control`), 18px cards (`rounded-card`),
+  999px switches.
+- **Motion**: short fades only — no springs, page-scale-ins, or the old
+  aurora backdrop — plus a progress-bar sheen while a job is active; all
+  disabled by `prefers-reduced-motion`.
+- Lowercase UI copy throughout (titles, paths, and commands keep their real
+  case), a 2px `#6cb6ff` focus-visible ring (3px offset) on every focusable
+  element, and custom scrollbars.
 
 ---
 

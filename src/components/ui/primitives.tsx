@@ -1,6 +1,10 @@
 "use client";
 
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
+import {
+  forwardRef,
+  type ButtonHTMLAttributes,
+  type ReactNode,
+} from "react";
 import { LoaderIcon } from "./icons";
 
 export function cn(...parts: Array<string | false | null | undefined>): string {
@@ -11,7 +15,7 @@ export function cn(...parts: Array<string | false | null | undefined>): string {
 // Button
 // ---------------------------------------------------------------------
 type Variant = "primary" | "secondary" | "ghost" | "danger";
-type Size = "sm" | "md" | "lg";
+type Size = "xs" | "sm" | "md" | "lg";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
@@ -21,18 +25,17 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const VARIANTS: Record<Variant, string> = {
-  primary:
-    "bg-salmon text-canvas hover:bg-salmon-hover disabled:bg-salmon/40 shadow-glow-salmon",
-  secondary:
-    "bg-panel2 text-ink hover:bg-panel2/70 border border-border hover:border-accent/50 hover:text-accent",
-  ghost: "bg-transparent text-ink-muted hover:text-salmon hover:bg-panel2/60",
-  danger: "bg-danger/15 text-danger hover:bg-danger/25 border border-danger/30",
+  primary: "bg-ink text-black hover:bg-white",
+  secondary: "bg-raised text-ink hover:bg-[#262626]",
+  ghost: "bg-transparent text-ink-muted hover:text-ink",
+  danger: "bg-[#3a1414] text-danger hover:bg-[#4a1a1a]",
 };
 
 const SIZES: Record<Size, string> = {
-  sm: "h-8 px-3 text-xs gap-1.5",
-  md: "h-10 px-4 text-sm gap-2",
-  lg: "h-12 px-6 text-base gap-2",
+  xs: "h-7 px-2.5 text-xs gap-1.5 font-medium",
+  sm: "h-8 px-3 text-xs gap-2 font-medium",
+  md: "h-[38px] px-3.5 text-sm gap-2 font-medium",
+  lg: "h-[46px] px-5 text-[15px] gap-2.5 font-semibold",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
@@ -44,10 +47,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       ref={ref}
       disabled={disabled || loading}
       className={cn(
-        "inline-flex items-center justify-center rounded-xl font-medium",
-        "transition-[transform,background-color,box-shadow,color] duration-200 ease-spring",
-        "cursor-pointer select-none hover:-translate-y-0.5 active:translate-y-0 active:scale-95",
-        "disabled:cursor-not-allowed disabled:opacity-60 disabled:translate-y-0 disabled:active:scale-100",
+        "inline-flex cursor-pointer select-none items-center justify-center rounded-control",
+        "transition-colors duration-150",
+        "disabled:cursor-not-allowed disabled:opacity-40",
         VARIANTS[variant],
         SIZES[size],
         className
@@ -61,7 +63,39 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 });
 
 // ---------------------------------------------------------------------
-// Section header used inside option panels
+// IconButton — circular icon-only control (queue cancel, sidebar links, ×)
+// ---------------------------------------------------------------------
+interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  size?: 28 | 32 | 40;
+  bordered?: boolean;
+}
+
+export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
+  { size = 32, bordered, className, children, ...rest },
+  ref
+) {
+  const px = size === 28 ? "h-7 w-7" : size === 40 ? "h-10 w-10" : "h-8 w-8";
+  return (
+    <button
+      ref={ref}
+      type="button"
+      className={cn(
+        "inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full",
+        "text-ink-muted transition-colors duration-150 hover:text-ink",
+        "disabled:cursor-not-allowed disabled:opacity-40",
+        px,
+        bordered ? "border border-[#2b2b2b] bg-surface" : "bg-transparent",
+        className
+      )}
+      {...rest}
+    >
+      {children}
+    </button>
+  );
+});
+
+// ---------------------------------------------------------------------
+// Section header used inside option panels — plain label + faint hint.
 // ---------------------------------------------------------------------
 export function SectionTitle({
   icon,
@@ -73,26 +107,30 @@ export function SectionTitle({
   hint?: string;
 }) {
   return (
-    <div className="mb-3 flex items-center gap-2.5">
-      {icon && <span className="text-accent">{icon}</span>}
-      <h3 className="text-xs font-bold uppercase tracking-wider text-ink-muted">{title}</h3>
+    <div className="mb-2 flex items-baseline justify-between gap-3 px-1">
+      <span className="flex items-center gap-2 text-[13px] font-semibold text-ink">
+        {icon}
+        {title}
+      </span>
       {hint && <span className="text-xs text-ink-faint">{hint}</span>}
     </div>
   );
 }
 
 // ---------------------------------------------------------------------
-// Selectable option row (radio behaviour)
+// Selectable list row (radio behaviour) — inverted fill when selected.
 // ---------------------------------------------------------------------
 export function OptionRow({
   selected,
   onSelect,
   disabled,
+  className,
   children,
 }: {
   selected: boolean;
   onSelect: () => void;
   disabled?: boolean;
+  className?: string;
   children: ReactNode;
 }) {
   return (
@@ -103,101 +141,182 @@ export function OptionRow({
       disabled={disabled}
       onClick={onSelect}
       className={cn(
-        "flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left",
-        "card-hover cursor-pointer active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none",
-        selected
-          ? "border-accent/60 bg-accent-soft shadow-glow"
-          : "border-border bg-canvas/50 hover:border-border/80 hover:bg-panel2/40"
+        "flex w-full cursor-pointer rounded-control px-3.5 text-left text-[13px]",
+        "transition-colors duration-150",
+        "disabled:cursor-not-allowed disabled:opacity-40",
+        selected ? "bg-ink text-black" : "bg-transparent text-ink hover:bg-[#1a1a1a]",
+        className ?? "min-h-11 items-center"
       )}
     >
-      <span
-        className={cn(
-          "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
-          selected ? "border-accent" : "border-ink-faint"
-        )}
-      >
-        {selected && <span className="h-2 w-2 rounded-full bg-accent" />}
-      </span>
-      <span className="flex-1">{children}</span>
+      {children}
     </button>
   );
 }
 
 // ---------------------------------------------------------------------
-// Toggle / checkbox
+// Switch — 36×20 track, matches the mockup's on/off states exactly.
 // ---------------------------------------------------------------------
-export function Toggle({
+export function Switch({
   checked,
   onChange,
   label,
   description,
+  flag,
   id,
+  disabled,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
   label: string;
   description?: string;
+  /** Faint monospace flag shown inline instead of a description (e.g. --embed-subs). */
+  flag?: string;
   id: string;
+  disabled?: boolean;
 }) {
   return (
     <label
       htmlFor={id}
-      className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-canvas/50 px-4 py-3 transition-colors hover:bg-panel2/40"
+      className={cn(
+        "flex min-h-11 cursor-pointer items-center gap-3 py-2.5",
+        disabled && "cursor-not-allowed opacity-40"
+      )}
     >
+      <span className="flex-1">
+        <span className="block text-[13px] text-ink">{label}</span>
+        {description && (
+          <span className="mt-0.5 block text-[11.5px] text-ink-faint">{description}</span>
+        )}
+      </span>
+      {flag && <span className="text-xs text-ink-faint">{flag}</span>}
       <button
         id={id}
         type="button"
         role="switch"
         aria-checked={checked}
+        disabled={disabled}
         onClick={() => onChange(!checked)}
         className={cn(
-          "mt-0.5 inline-flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition-colors duration-200",
-          checked ? "bg-salmon" : "bg-panel2"
+          "relative h-5 w-9 shrink-0 rounded-full transition-colors duration-150",
+          checked ? "bg-ink" : "bg-[#2b2b2b]"
         )}
       >
         <span
           className={cn(
-            "h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200",
-            checked ? "translate-x-4" : "translate-x-0"
+            "absolute top-0.5 h-4 w-4 rounded-full transition-[left] duration-150",
+            checked ? "left-[18px] bg-black" : "left-0.5 bg-ink-faint"
           )}
         />
       </button>
-      <span className="flex-1">
-        <span className="block text-sm font-medium text-ink">{label}</span>
-        {description && (
-          <span className="mt-0.5 block text-xs text-ink-muted">{description}</span>
-        )}
-      </span>
     </label>
   );
 }
 
 // ---------------------------------------------------------------------
-// Badge
+// Segmented control — pill (mode selector) or grid (e.g. 1–6 concurrency).
 // ---------------------------------------------------------------------
-export function Badge({
+export function Segmented<T extends string | number>({
+  items,
+  value,
+  onChange,
+  ariaLabel,
+  layout = "inline",
+  className,
+}: {
+  items: { value: T; label: ReactNode; icon?: ReactNode }[];
+  value: T;
+  onChange: (v: T) => void;
+  ariaLabel: string;
+  layout?: "inline" | "grid";
+  className?: string;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label={ariaLabel}
+      className={cn(
+        "flex overflow-hidden rounded-control bg-surface-2",
+        layout === "grid" && "grid",
+        className
+      )}
+      style={layout === "grid" ? { gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` } : undefined}
+    >
+      {items.map((it, i) => {
+        const on = it.value === value;
+        return (
+          <button
+            key={String(it.value)}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onChange(it.value)}
+            className={cn(
+              "flex h-[38px] cursor-pointer items-center justify-center gap-2 px-3.5 text-sm font-medium transition-colors duration-150",
+              i < items.length - 1 && "border-r border-black",
+              on ? "bg-ink text-black" : "bg-transparent text-ink hover:bg-[#1a1a1a]"
+            )}
+          >
+            {it.icon}
+            {it.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------
+// Chip — small tag used for type/format/count labels.
+// ---------------------------------------------------------------------
+export function Chip({
   tone = "neutral",
   children,
+  className,
 }: {
-  tone?: "neutral" | "success" | "warn" | "danger" | "info" | "salmon";
+  tone?: "neutral" | "inverted" | "video" | "audio" | "subs" | "done" | "danger" | "warn";
   children: ReactNode;
+  className?: string;
 }) {
   const tones: Record<string, string> = {
-    neutral: "bg-panel2 text-ink-muted border-border",
-    success: "bg-accent/15 text-accent border-accent/30",
-    warn: "bg-warn/15 text-warn border-warn/30",
-    danger: "bg-danger/15 text-danger border-danger/30",
-    info: "bg-info/15 text-info border-info/30",
-    salmon: "bg-salmon/15 text-salmon border-salmon/30",
+    neutral: "bg-raised text-ink-muted",
+    inverted: "bg-ink text-black",
+    video: "bg-video-tint text-video",
+    audio: "bg-audio-tint text-audio",
+    subs: "bg-subs-tint text-subs",
+    done: "bg-[#123322] text-done",
+    danger: "bg-danger-bg text-danger-text",
+    warn: "bg-warn-bg text-warn border border-warn-border",
   };
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium",
-        tones[tone]
+        "inline-flex items-center gap-1 rounded-[6px] px-2 py-0.5 text-[11px] font-medium",
+        tones[tone],
+        className
       )}
     >
       {children}
     </span>
+  );
+}
+
+// Legacy alias kept for call sites migrated incrementally.
+export const Badge = Chip;
+
+// ---------------------------------------------------------------------
+// Card — rounded-card surface container.
+// ---------------------------------------------------------------------
+export function Card({
+  children,
+  className,
+  ariaLabel,
+}: {
+  children: ReactNode;
+  className?: string;
+  ariaLabel?: string;
+}) {
+  return (
+    <section aria-label={ariaLabel} className={cn("rounded-card bg-surface", className)}>
+      {children}
+    </section>
   );
 }

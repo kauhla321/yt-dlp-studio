@@ -38,9 +38,10 @@ Built with **Next.js 15 (App Router) · TypeScript · Tailwind CSS · Node.js**.
 - **Resume interrupted playlists** — uses `--download-archive` so a 1,000+ item playlist resumes
   without re-downloading completed videos. Survives browser refresh, app restart, and reboot.
 - **Configurable locations** — separate default folders for single videos and playlists.
-- **Polished desktop UI** — dark theme with a teal-green (system/status) + salmon-pink (actions)
-  palette, springy interactions, staggered entrances, and animated section transitions. The
-  Download screen keeps your URL and analysis when you visit Settings and come back.
+- **"mono night" UI** — pure-black canvas, IBM Plex Mono everywhere, lowercase copy, and an
+  inverted (ink-on-black) selected state for the active nav tile, segmented controls, and the
+  primary action — cobalt.tools-inspired, no gradients or spring animations. The Download screen
+  keeps your URL and analysis when you visit Settings and come back.
 
 ---
 

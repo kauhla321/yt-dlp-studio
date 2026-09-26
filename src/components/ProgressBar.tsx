@@ -1,16 +1,15 @@
 "use client";
 
-import { cn } from "./ui/primitives";
 import type { JobStatus } from "@/types";
 
-const TONE: Record<string, string> = {
-  downloading: "bg-accent",
-  processing: "bg-info",
-  completed: "bg-accent",
-  failed: "bg-danger",
-  interrupted: "bg-warn",
-  canceled: "bg-ink-faint",
-  queued: "bg-ink-faint",
+const FILL: Record<JobStatus, string> = {
+  downloading: "#6cb6ff",
+  processing: "#b18cff",
+  completed: "#5fd38d",
+  failed: "#ff6b6b",
+  interrupted: "#ffcf56",
+  canceled: "#3a3a3a",
+  queued: "#262626",
 };
 
 export function ProgressBar({
@@ -21,22 +20,19 @@ export function ProgressBar({
   status: JobStatus;
 }) {
   const active = status === "downloading" || status === "processing";
-  const clamped = Math.max(0, Math.min(100, percent));
+  // Processing (ffmpeg post-step) has no meaningful percent — show a full bar.
+  const clamped = status === "processing" || status === "completed" ? 100 : Math.max(0, Math.min(100, percent));
   return (
     <div
-      className="h-2 w-full overflow-hidden rounded-full bg-panel2"
+      className="relative h-1 w-full overflow-hidden rounded-full bg-[#262626]"
       role="progressbar"
       aria-valuenow={Math.round(clamped)}
       aria-valuemin={0}
       aria-valuemax={100}
     >
       <div
-        className={cn(
-          "relative h-full overflow-hidden rounded-full transition-[width] duration-500 ease-out",
-          TONE[status] ?? "bg-accent",
-          active && "animate-pulse-bar"
-        )}
-        style={{ width: `${clamped}%` }}
+        className="absolute inset-y-0 left-0 overflow-hidden rounded-full transition-[width] duration-500 ease-out"
+        style={{ width: `${clamped}%`, background: FILL[status] }}
       >
         {active && <span className="progress-sheen" />}
       </div>

@@ -1,18 +1,11 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono as JetBrainsMono } from "next/font/google";
+import { IBM_Plex_Mono as ibmPlexMonoFont } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/Sidebar";
 
-// "Studio Precision" type system: Inter for UI, JetBrains Mono for technical
-// specs (file sizes, bitrates, paths, progress readouts).
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-sans",
-  display: "swap",
-});
-
-const jetBrainsMono = JetBrainsMono({
+// "mono night" type system: IBM Plex Mono for everything — UI copy, technical
+// specs (file sizes, bitrates, paths, progress readouts), the lot.
+const ibmPlexMono = ibmPlexMonoFont({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-mono",
@@ -31,8 +24,8 @@ export const viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetBrainsMono.variable}`}>
-      <body className="font-sans">
+    <html lang="en" className={ibmPlexMono.variable}>
+      <body className="font-mono">
         <div className="flex h-screen overflow-hidden">
           <Sidebar />
           {/* min-w-0 lets this flex child shrink below its content width so

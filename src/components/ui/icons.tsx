@@ -178,3 +178,67 @@ export const CopyIcon = (p: IconProps) => (
     <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
   </Base>
 );
+
+export const InfoIcon = (p: IconProps) => (
+  <Base {...p}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M12 16v-4M12 8h.01" />
+  </Base>
+);
+
+export const StarIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01Z" />
+  </Base>
+);
+
+export const GithubIcon = (p: IconProps) => (
+  <Base {...p} fill="currentColor" stroke="none">
+    <path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49 0-.24-.01-.87-.01-1.71-2.78.62-3.37-1.36-3.37-1.36-.45-1.19-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1 .07 1.53 1.06 1.53 1.06.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.37-2.22-.26-4.56-1.14-4.56-5.07 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.31.1-2.72 0 0 .84-.28 2.75 1.05a9.29 9.29 0 0 1 5 0c1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.46.1 2.72.64.72 1.03 1.63 1.03 2.75 0 3.94-2.34 4.81-4.57 5.06.36.32.68.94.68 1.9 0 1.37-.01 2.48-.01 2.81 0 .27.18.6.69.49A10.26 10.26 0 0 0 22 12.25C22 6.58 17.52 2 12 2Z" />
+  </Base>
+);
+
+// ---------------------------------------------------------------------
+// "mono night" additions — glyphs used by the revamped UI.
+// ---------------------------------------------------------------------
+
+export const ArrowDownIcon = (p: IconProps) => (
+  <Base {...p} strokeWidth={2.2}>
+    <path d="M12 4v14" />
+    <path d="m6 12 6 6 6-6" />
+  </Base>
+);
+
+export const ExclaimIcon = (p: IconProps) => (
+  <Base {...p} strokeWidth={2.6}>
+    <path d="M12 7v6M12 17h.01" />
+  </Base>
+);
+
+export const PlaylistIcon = (p: IconProps) => (
+  <Base {...p} fill="none">
+    <path d="M3 5h11M3 12h11M3 19h7" />
+    <path d="m16 15 5 3-5 3z" fill="currentColor" stroke="none" />
+  </Base>
+);
+
+/** Filled video-camera glyph used in the video/mode segmented control. */
+export const VideoCamIcon = (p: IconProps) => (
+  <Base {...p} fill="currentColor" stroke="none">
+    <path d="M4 5h11a2 2 0 0 1 2 2v2.5l4-2.5v10l-4-2.5V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" />
+  </Base>
+);
+
+/** Filled music-note glyph used in the audio segmented control. */
+export const NoteIcon = (p: IconProps) => (
+  <Base {...p} fill="currentColor" stroke="none">
+    <path d="M9 4.5 21 2v13.5a3.5 3.5 0 1 1-2-3.2V6.4L11 8v10.5a3.5 3.5 0 1 1-2-3.2z" />
+  </Base>
+);
+
+/** Filled subtitles glyph used in the subtitles segmented control. */
+export const SubsGlyphIcon = (p: IconProps) => (
+  <Base {...p} fill="currentColor" stroke="none">
+    <path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm2 10v2h6v-2zm8 0v2h4v-2zM6 10v2h3v-2zm5 0v2h7v-2z" />
+  </Base>
+);
