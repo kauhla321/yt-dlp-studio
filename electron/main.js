@@ -107,18 +107,18 @@ function splashPage(message) {
   const html = `<!doctype html><html><head><meta charset="utf-8"><style>
     html,body{height:100%;margin:0}
     body{display:flex;flex-direction:column;align-items:center;justify-content:center;
-      background:#020617;color:#F8FAFC;font-family:system-ui,sans-serif;gap:14px}
-    .ring{width:34px;height:34px;border:3px solid #1E2A44;border-top-color:#22C55E;
+      background:#000;color:#fff;font-family:ui-monospace,Consolas,monospace;gap:14px}
+    .ring{width:34px;height:34px;border:3px solid #1f1f1f;border-top-color:#fff;
       border-radius:50%;animation:s 0.9s linear infinite}
     @keyframes s{to{transform:rotate(360deg)}}
-    .t{font-size:13px;color:#94A3B8}</style></head>
+    .t{font-size:13px;color:#8a8a8a}</style></head>
     <body><div class="ring"></div><div class="t">${message}</div></body></html>`;
   return "data:text/html;charset=utf-8," + encodeURIComponent(html);
 }
 
 function errorPage(message) {
   const html = `<!doctype html><html><head><meta charset="utf-8"><style>
-    body{background:#020617;color:#F87171;font-family:system-ui,sans-serif;
+    body{background:#000;color:#ff6b6b;font-family:ui-monospace,Consolas,monospace;
       display:flex;align-items:center;justify-content:center;height:100vh;margin:0;padding:24px;text-align:center}
     </style></head><body><div><h3>yt-dlp Studio failed to start</h3><p>${message}</p></div></body></html>`;
   return "data:text/html;charset=utf-8," + encodeURIComponent(html);
@@ -135,7 +135,7 @@ function createWindow() {
     height: 820,
     minWidth: 880,
     minHeight: 600,
-    backgroundColor: "#020617",
+    backgroundColor: "#000000",
     title: "yt-dlp Studio",
     autoHideMenuBar: true,
     icon: iconPath,
