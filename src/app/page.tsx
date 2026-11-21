@@ -11,6 +11,8 @@ import { AudioOptions } from "@/components/AudioOptions";
 import { SubtitleOptions, type SubtitleConfig } from "@/components/SubtitleOptions";
 import { PlaylistPanel, type PlaylistMode } from "@/components/PlaylistPanel";
 import { DownloadQueue } from "@/components/DownloadQueue";
+import { SaveLocation } from "@/components/SaveLocation";
+import { SocialIcons } from "@/components/Socials";
 import { ReadyCard, type PrimarySelection } from "@/components/CommandPreview";
 import { Button, IconButton, cn } from "@/components/ui/primitives";
 import { SearchIcon, AlertIcon, ArrowDownIcon, XIcon } from "@/components/ui/icons";
@@ -279,6 +281,28 @@ export default function HomePage() {
     }
   }, [buildRequest, refreshJobs]);
 
+  /** Persist a newly picked folder as the default for that kind of download. */
+  const changeOutputDir = useCallback(async (kind: "video" | "playlist", dir: string) => {
+    const next = await api.saveSettings(
+      kind === "video" ? { videoOutputDir: dir } : { playlistOutputDir: dir }
+    );
+    setOutputDirs({ video: next.videoOutputDir, playlist: next.playlistOutputDir });
+  }, []);
+
+  /** Forget every interrupted playlist (downloaded files stay on disk). */
+  const dismissResumable = useCallback(async () => {
+    const n = resumable.length;
+    const ok = window.confirm(
+      `Remove ${n} interrupted playlist${n === 1 ? "" : "s"} from the resume list?\n\n` +
+        "Files that already finished downloading are kept. You won't be able to resume " +
+        (n === 1 ? "it" : "them") + " later."
+    );
+    if (!ok) return;
+    await Promise.allSettled(resumable.map((p) => api.removePlaylist(p.id)));
+    const r = await api.playlists().catch(() => null);
+    setResumable(r ? r.playlists.filter((p) => p.status === "interrupted") : []);
+  }, [resumable]);
+
   const handleCancel = useCallback(
     (id: string) => {
       api.cancel(id).then(refreshJobs).catch(() => {});
@@ -296,7 +320,12 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto flex min-h-full w-full max-w-[880px] flex-col items-center px-4 pb-10 pt-3">
-      <div className="relative flex w-full items-center justify-end py-1.5">
+      <div className="relative flex w-full items-center justify-between gap-3 py-1.5">
+        <div className="flex items-center gap-2.5 pl-1">
+          <span className="text-[15px] font-semibold tracking-tight">yt-dlp studio</span>
+          <span className="h-4 w-px bg-raised" aria-hidden="true" />
+          <SocialIcons />
+        </div>
         <a
           href="#queue"
           aria-label={`download queue, ${runningCount} running`}
@@ -317,16 +346,18 @@ export default function HomePage() {
         <SystemBanner onReady={() => setAnalyzeError(null)} />
 
         {resumable.length > 0 && (
-          <a
-            href="/downloads"
-            className="flex items-center gap-2.5 rounded-control bg-surface py-2.5 pl-4 pr-2.5 text-[13px] text-ink no-underline"
-          >
+          <div className="flex items-center gap-2.5 rounded-control bg-surface py-2.5 pl-4 pr-2.5 text-[13px] text-ink">
             <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-video" />
             <span className="flex-1">
               {resumable.length} interrupted playlist{resumable.length === 1 ? "" : "s"} can be resumed
             </span>
-            <span className="rounded-[8px] bg-raised px-2.5 py-1.5 text-xs">go to library →</span>
-          </a>
+            <a href="/downloads" className="rounded-[8px] bg-raised px-2.5 py-1.5 text-xs text-ink no-underline">
+              go to library →
+            </a>
+            <IconButton aria-label="remove from resume list" title="remove from resume list" onClick={dismissResumable}>
+              <XIcon className="h-3.5 w-3.5" />
+            </IconButton>
+          </div>
         )}
 
         <label htmlFor="url" className="sr-only">
@@ -451,6 +482,11 @@ export default function HomePage() {
                   url={analysis.metadata.webpageUrl}
                   outputDir={outputDirs.playlist}
                 />
+                <SaveLocation
+                  label="save playlist to (one subfolder per playlist)"
+                  dir={outputDirs.playlist}
+                  onChange={(d) => changeOutputDir("playlist", d)}
+                />
                 <Button
                   size="lg"
                   className="w-full"
@@ -494,6 +530,12 @@ export default function HomePage() {
                   config={subConfig}
                   onChange={setSubConfig}
                   embedOk={mode === "video"}
+                />
+
+                <SaveLocation
+                  label="save to"
+                  dir={outputDirs.video}
+                  onChange={(d) => changeOutputDir("video", d)}
                 />
 
                 {primary ? (

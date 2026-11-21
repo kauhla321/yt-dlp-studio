@@ -57,3 +57,21 @@ export async function reconcileInterrupted(): Promise<void> {
   }
   if (changed) await writeJson(FILE, list);
 }
+
+/**
+ * Forget a saved playlist (used to dismiss an interrupted one that can't or
+ * shouldn't be resumed). Deletes its --download-archive bookkeeping file too.
+ * Files already downloaded into the output folder are left untouched.
+ * Returns false if there was nothing to remove.
+ */
+export async function removePlaylistState(id: string): Promise<boolean> {
+  const list = await readJson<PlaylistState[]>(FILE, []);
+  const target = list.find((p) => p.id === id);
+  if (!target) return false;
+  await writeJson(
+    FILE,
+    list.filter((p) => p.id !== id)
+  );
+  await fs.rm(target.archivePath, { force: true }).catch(() => {});
+  return true;
+}

@@ -39,7 +39,10 @@ Built with **Next.js 15 (App Router) · TypeScript · Tailwind CSS · Node.js**.
 - **Download history** — title, URL, date, location, type, and status, persisted to disk.
 - **Resume interrupted playlists** — uses `--download-archive` so a 1,000+ item playlist resumes
   without re-downloading completed videos. Survives browser refresh, app restart, and reboot.
-- **Configurable locations** — separate default folders for single videos and playlists.
+- **Configurable locations** — separate default folders for single videos and playlists, picked
+  with the native folder dialog ("change folder" on the Download screen, "browse…" in Settings).
+- **Dismiss stuck resumes** — an interrupted playlist that can't be resumed can be removed from
+  the resume list (× on the home banner, or "remove" in the Library). Finished files are kept.
 - **"mono night" UI** — pure-black canvas, IBM Plex Mono everywhere, lowercase copy, and an
   inverted (ink-on-black) selected state for the active nav tile, segmented controls, and the
   primary action — cobalt.tools-inspired, no gradients or spring animations. The Download screen

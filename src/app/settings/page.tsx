@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { canPickFolder, pickFolder } from "@/lib/desktop";
 import { api } from "@/lib/client";
 import { Button, Switch, Segmented } from "@/components/ui/primitives";
-import { GithubIcon, StarIcon } from "@/components/ui/icons";
+import { GithubIcon, GlobeIcon, LinkedInIcon, StarIcon } from "@/components/ui/icons";
+import { SOCIALS } from "@/lib/socials";
 import { ToolsSection } from "@/components/ToolsSection";
 import type { AppSettings } from "@/types";
 
@@ -122,15 +124,21 @@ export default function SettingsPage() {
               audio and merging) as local processes and streams their progress into this window.
             </p>
             <div className="flex flex-wrap items-center gap-2">
-              <a
-                href="https://github.com/kauhla321"
-                target="_blank"
-                rel="noreferrer"
-                className="flex w-fit items-center gap-2 rounded-[9px] bg-raised px-3 py-2 text-[12.5px] text-ink no-underline transition-colors duration-150 hover:bg-[#262626]"
-              >
-                <GithubIcon className="h-3.5 w-3.5" />
-                github.com/kauhla321
-              </a>
+              {SOCIALS.map((s) => {
+                const Icon = s.kind === "github" ? GithubIcon : s.kind === "linkedin" ? LinkedInIcon : GlobeIcon;
+                return (
+                  <a
+                    key={s.url}
+                    href={s.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex w-fit items-center gap-2 rounded-[9px] bg-raised px-3 py-2 text-[12.5px] text-ink no-underline transition-colors duration-150 hover:bg-[#262626]"
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {s.url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
+                  </a>
+                );
+              })}
               <a
                 href="https://github.com/kauhla321/yt-dlp-studio"
                 target="_blank"
@@ -161,20 +169,36 @@ function DirField({
   placeholder: string;
   onChange: (v: string) => void;
 }) {
+  // Native picker only exists inside the desktop app; read it after mount.
+  const [native, setNative] = useState(false);
+  useEffect(() => setNative(canPickFolder()), []);
+
+  const browse = async () => {
+    const picked = await pickFolder(value);
+    if (picked) onChange(picked);
+  };
+
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className="text-xs text-ink-muted">
         {label}
       </label>
-      <input
-        id={id}
-        type="text"
-        value={value}
-        placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
-        className="input-field"
-        spellCheck={false}
-      />
+      <div className="flex gap-2">
+        <input
+          id={id}
+          type="text"
+          value={value}
+          placeholder={placeholder}
+          onChange={(e) => onChange(e.target.value)}
+          className="input-field min-w-0 flex-1"
+          spellCheck={false}
+        />
+        {native && (
+          <Button variant="secondary" onClick={browse}>
+            browse…
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

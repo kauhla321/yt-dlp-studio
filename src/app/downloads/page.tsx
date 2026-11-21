@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api } from "@/lib/client";
 import { Button, cn } from "@/components/ui/primitives";
 import { ProgressBar } from "@/components/ProgressBar";
-import { RefreshIcon, PlayIcon, VideoCamIcon, NoteIcon, SubsGlyphIcon, PlaylistIcon } from "@/components/ui/icons";
+import { RefreshIcon, PlayIcon, TrashIcon, VideoCamIcon, NoteIcon, SubsGlyphIcon, PlaylistIcon } from "@/components/ui/icons";
 import type { DownloadType, HistoryEntry, PlaylistState } from "@/types";
 
 const TYPE_TINT: Record<DownloadType, { bg: string; fg: string; Icon: typeof VideoCamIcon }> = {
@@ -27,6 +27,8 @@ export default function DownloadsPage() {
   const [loading, setLoading] = useState(true);
   const [resuming, setResuming] = useState<string | null>(null);
   const [retrying, setRetrying] = useState<string | null>(null);
+  const [removing, setRemoving] = useState<string | null>(null);
+  const [playlistError, setPlaylistError] = useState<{ id: string; msg: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -47,11 +49,31 @@ export default function DownloadsPage() {
 
   const resume = async (id: string) => {
     setResuming(id);
+    setPlaylistError(null);
     try {
       await api.resumePlaylist(id);
       window.location.href = "/";
-    } catch {
+    } catch (err) {
+      setPlaylistError({ id, msg: (err as Error).message || "Could not resume this playlist." });
       setResuming(null);
+    }
+  };
+
+  /** Drop an interrupted playlist from the resume list (files are kept). */
+  const remove = async (p: PlaylistState) => {
+    const ok = window.confirm(
+      `Remove "${p.title}" from the resume list?\n\nFiles that already finished downloading are kept, but it can't be resumed afterwards.`
+    );
+    if (!ok) return;
+    setRemoving(p.id);
+    setPlaylistError(null);
+    try {
+      await api.removePlaylist(p.id);
+      setPlaylists((list) => list.filter((x) => x.id !== p.id));
+    } catch (err) {
+      setPlaylistError({ id: p.id, msg: (err as Error).message || "Could not remove this playlist." });
+    } finally {
+      setRemoving(null);
     }
   };
 
@@ -106,7 +128,21 @@ export default function DownloadsPage() {
                       <Link href="/">
                         <Button variant="secondary">start over</Button>
                       </Link>
+                      <Button
+                        variant="secondary"
+                        className="ml-auto"
+                        icon={<TrashIcon className="h-3 w-3" />}
+                        loading={removing === p.id}
+                        onClick={() => remove(p)}
+                      >
+                        remove
+                      </Button>
                     </div>
+                    {playlistError?.id === p.id && (
+                      <p className="rounded-control bg-danger-bg px-3 py-2 text-xs leading-relaxed text-danger-text">
+                        {playlistError.msg}
+                      </p>
+                    )}
                   </article>
                 );
               })}

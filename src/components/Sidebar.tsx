@@ -32,9 +32,12 @@ export function Sidebar() {
     };
     check();
     const id = setInterval(check, 5000);
+    // Re-check right away when a playlist is removed from the resume list.
+    window.addEventListener("ytp:playlists-changed", check);
     return () => {
       cancelled = true;
       clearInterval(id);
+      window.removeEventListener("ytp:playlists-changed", check);
     };
   }, []);
 

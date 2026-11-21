@@ -80,6 +80,15 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ id }),
     }),
+  removePlaylist: (id: string) =>
+    request<{ removed: boolean }>("/api/playlists", {
+      method: "DELETE",
+      body: JSON.stringify({ id }),
+    }).then((r) => {
+      // Lets the sidebar's "interrupted" dot update immediately.
+      window.dispatchEvent(new Event("ytp:playlists-changed"));
+      return r;
+    }),
 
   settings: () => request<AppSettings>("/api/settings"),
   saveSettings: (patch: Partial<AppSettings>) =>

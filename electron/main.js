@@ -4,7 +4,7 @@
 // binary as Node via ELECTRON_RUN_AS_NODE) and shows it in a native window.
 // In development it simply points at the already-running `next dev` server.
 
-const { app, BrowserWindow, shell } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, shell } = require("electron");
 const { spawn } = require("node:child_process");
 const http = require("node:http");
 const net = require("node:net");
@@ -142,6 +142,8 @@ function createWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
+      preload: path.join(__dirname, "preload.js"),
     },
   });
 
@@ -156,6 +158,23 @@ function createWindow() {
     mainWindow = null;
   });
 }
+
+// Native folder picker for the download location. Only answers the app's own
+// page (not the splash/error data: URLs or anything navigated to externally).
+ipcMain.handle("ytp:pick-folder", async (event, defaultPath) => {
+  const frameUrl = event.senderFrame ? event.senderFrame.url : "";
+  if (!appUrl || !frameUrl.startsWith(appUrl)) return null;
+  const owner = BrowserWindow.fromWebContents(event.sender) || mainWindow;
+  const result = await dialog.showOpenDialog(owner, {
+    title: "Choose download folder",
+    properties: ["openDirectory", "createDirectory"],
+    defaultPath:
+      typeof defaultPath === "string" && defaultPath && fs.existsSync(defaultPath)
+        ? defaultPath
+        : app.getPath("downloads"),
+  });
+  return result.canceled ? null : result.filePaths[0] || null;
+});
 
 async function boot() {
   createWindow();
