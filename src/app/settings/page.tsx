@@ -6,6 +6,7 @@ import { api } from "@/lib/client";
 import { Button, Switch, Segmented } from "@/components/ui/primitives";
 import { GithubIcon, GlobeIcon, LinkedInIcon, StarIcon } from "@/components/ui/icons";
 import { SOCIALS } from "@/lib/socials";
+import { DISCLAIMER_PARAGRAPHS } from "@/lib/legal";
 import { ToolsSection } from "@/components/ToolsSection";
 import type { AppSettings } from "@/types";
 
@@ -149,6 +150,20 @@ export default function SettingsPage() {
                 star the project on github
               </a>
             </div>
+          </section>
+
+          <div className="mt-4 px-1 text-[13px] font-semibold">disclaimer</div>
+          <section aria-label="disclaimer" className="mt-2.5 flex flex-col gap-2.5 rounded-card bg-surface p-4">
+            {DISCLAIMER_PARAGRAPHS.map((p) => (
+              <p key={p} className="text-[12.5px] leading-relaxed text-ink-muted">
+                {p}
+              </p>
+            ))}
+            {settings.disclaimerAcceptedAt && (
+              <p className="text-[11.5px] text-ink-faint">
+                accepted on {new Date(settings.disclaimerAcceptedAt).toLocaleDateString()}
+              </p>
+            )}
           </section>
         </div>
       </div>

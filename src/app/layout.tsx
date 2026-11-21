@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { IBM_Plex_Mono as ibmPlexMonoFont } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/Sidebar";
+import { DisclaimerGate } from "@/components/DisclaimerGate";
 
 // "mono night" type system: IBM Plex Mono for everything — UI copy, technical
 // specs (file sizes, bitrates, paths, progress readouts), the lot.
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               long paths / wide cards don't cause horizontal overflow. */}
           <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden">{children}</main>
         </div>
+        <DisclaimerGate />
       </body>
     </html>
   );

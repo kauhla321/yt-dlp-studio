@@ -207,6 +207,8 @@ export interface AppSettings {
   cookieModeDefault: boolean;
   /** Limit concurrent downloads. */
   maxConcurrent: number;
+  /** When the user accepted the usage disclaimer (epoch ms); unset = not yet. */
+  disclaimerAcceptedAt?: number;
 }
 
 // ---------------------------------------------------------------------

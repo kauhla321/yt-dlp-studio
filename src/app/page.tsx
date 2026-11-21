@@ -13,6 +13,7 @@ import { PlaylistPanel, type PlaylistMode } from "@/components/PlaylistPanel";
 import { DownloadQueue } from "@/components/DownloadQueue";
 import { SaveLocation } from "@/components/SaveLocation";
 import { SocialPills } from "@/components/Socials";
+import { DISCLAIMER_SHORT } from "@/lib/legal";
 import { ReadyCard, type PrimarySelection } from "@/components/CommandPreview";
 import { Button, IconButton, cn } from "@/components/ui/primitives";
 import { SearchIcon, AlertIcon, ArrowDownIcon, XIcon } from "@/components/ui/icons";
@@ -587,6 +588,9 @@ export default function HomePage() {
             <span className="text-ink">ffmpeg {system.ffmpeg.version ?? "?"}</span> on this machine
             {system.firefox.available ? " · firefox detected for cookies" : ""}
           </p>
+        )}
+        {!analysis && (
+          <p className="pb-2 text-center text-[11px] text-ink-faint">{DISCLAIMER_SHORT}</p>
         )}
       </div>
     </div>

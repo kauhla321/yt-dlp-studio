@@ -8,6 +8,28 @@ Built with **Next.js 15 (App Router) · TypeScript · Tailwind CSS · Node.js**.
 
 ---
 
+## Disclaimer
+
+yt-dlp Studio is an independent, open-source desktop interface for
+[yt-dlp](https://github.com/yt-dlp/yt-dlp). It is **not affiliated with, endorsed by, or
+sponsored by** yt-dlp, YouTube, Google, or any other website or service.
+
+It is intended for downloading content you have the right to download: your own uploads,
+content whose owner has given you permission, public-domain or openly licensed media, or copies
+your local law allows for personal use.
+
+**You are solely responsible for how you use this software.** Make sure you follow the copyright
+law of your country and the terms of service of the website you download from. The author does
+not condone piracy or copyright infringement and accepts no responsibility for misuse of this
+software or for any content downloaded with it.
+
+The software is provided "as is", without warranty of any kind. See [LICENSE](LICENSE).
+
+The app shows this notice on first launch and must be accepted before use; it is also available
+under **Settings → about**.
+
+---
+
 ## Features
 
 - **Analyze & Download** — paste a URL, detect single video vs. playlist, and see real options.
@@ -207,10 +229,11 @@ electron-builder/Windows quirk, unrelated to the app code.)
 
 ## Notes & limitations
 
-- **Cookie Mode** reads cookies from your local Firefox profile. Close Firefox while downloading
-  (the database can be locked while the browser is running).
+- **Cookie Mode** reads cookies from your local Firefox profile. Be signed in to the site in
+  Firefox; if reading the cookies fails, fully close Firefox and retry.
 - This is a **local** tool: it spawns processes and writes files on the host. Do not expose it to
   untrusted networks without adding authentication and input hardening.
 - The local API only accepts loopback `Host` headers and serves a restrictive
   Content-Security-Policy, so a malicious webpage cannot drive it via DNS rebinding.
-- Respect the terms of service of the sites you download from and applicable copyright law.
+- Respect the terms of service of the sites you download from and applicable copyright law
+  (see [Disclaimer](#disclaimer)).
