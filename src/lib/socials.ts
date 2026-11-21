@@ -12,4 +12,6 @@ export interface SocialLink {
 
 export const SOCIALS: SocialLink[] = [
   { kind: "github", label: "github", url: "https://github.com/kauhla321" },
+  { kind: "linkedin", label: "linkedin", url: "https://www.linkedin.com/in/christian-jesus-b-alcazar/" },
+  { kind: "website", label: "portfolio", url: "https://christianjesusbalcazar.netlify.app/" },
 ];
