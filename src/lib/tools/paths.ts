@@ -6,6 +6,7 @@ import type { ToolName, ToolSource } from "@/types";
 export const TOOL_BINARY: Record<ToolName, string> = {
   ytdlp: "yt-dlp",
   ffmpeg: "ffmpeg",
+  deno: "deno",
 };
 
 /**
@@ -44,12 +45,16 @@ function binaryNames(base: string): string[] {
  *   2. the app folder (next to the exe) and its bin/ subfolder
  *   3. the bare command name → relies on the system PATH
  */
-export function resolveTool(base: "yt-dlp" | "ffmpeg"): {
+export function resolveTool(base: "yt-dlp" | "ffmpeg" | "deno"): {
   command: string;
   source: ToolSource;
 } {
   const override =
-    base === "yt-dlp" ? process.env.YT_DLP_PATH : process.env.FFMPEG_PATH;
+    base === "yt-dlp"
+      ? process.env.YT_DLP_PATH
+      : base === "ffmpeg"
+        ? process.env.FFMPEG_PATH
+        : process.env.DENO_PATH;
   if (override && existing(override)) {
     return { command: override, source: "local" };
   }
@@ -91,4 +96,18 @@ export function toolInstallPath(tool: ToolName, dir = pickInstallDir()): string 
   const base = TOOL_BINARY[tool];
   const name = process.platform === "win32" ? `${base}.exe` : base;
   return path.join(dir, name);
+}
+
+/**
+ * Extra yt-dlp args that point it at a JavaScript runtime it would not find on
+ * its own. yt-dlp only looks for deno on the system PATH; a copy dropped next
+ * to the app (or installed from Settings) must be passed explicitly.
+ *
+ * Without a runtime YouTube still mostly works anonymously, but signed-in
+ * (cookie mode) requests use only web clients whose formats are locked behind
+ * JS challenges — so cookie mode fails with "no formats" / age errors.
+ */
+export function jsRuntimeArgs(): string[] {
+  const deno = resolveTool("deno");
+  return deno.source === "local" ? ["--js-runtimes", `deno:${deno.command}`] : [];
 }

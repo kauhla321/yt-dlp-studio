@@ -1,4 +1,5 @@
 import { runCollect, ytDlpBinary } from "./exec";
+import { jsRuntimeArgs } from "@/lib/tools/paths";
 import { bestAudioBytes, parseSubtitles, parseVideoQualities, type RawFormat } from "./formats";
 import { formatUploadDate } from "@/lib/utils/format-bytes";
 import { YtDlpError, classifyYtDlpError } from "./errors";
@@ -33,8 +34,10 @@ export async function analyzeUrl(url: string, cookieMode = false): Promise<Analy
   const args = [
     "-J",
     "--flat-playlist",
-    "--no-warnings",
+    // Warnings go to stderr (stdout stays pure JSON) and are what explain a
+    // failure — e.g. rotated cookies or a missing JS runtime — so keep them.
     "--no-progress",
+    ...jsRuntimeArgs(),
     ...(cookieMode ? ["--cookies-from-browser", "firefox"] : []),
     url,
   ];
@@ -43,11 +46,11 @@ export async function analyzeUrl(url: string, cookieMode = false): Promise<Analy
   try {
     result = await runCollect(ytDlpBinary(), args, { timeoutMs: 60_000 });
   } catch (err) {
-    throw classifyYtDlpError(err, "");
+    throw classifyYtDlpError(err, "", { cookieMode });
   }
 
   if (result.code !== 0) {
-    throw classifyYtDlpError(null, result.stderr || result.stdout);
+    throw classifyYtDlpError(null, result.stderr || result.stdout, { cookieMode });
   }
 
   let info: RawInfo;

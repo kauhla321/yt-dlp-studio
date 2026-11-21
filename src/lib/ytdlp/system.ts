@@ -30,16 +30,30 @@ async function detectFirefox(): Promise<{ available: boolean; profilesFound: boo
   const platform = process.platform;
   const candidates: string[] = [];
 
+  // Mirror the folders yt-dlp's --cookies-from-browser firefox searches, so
+  // "detected" here means yt-dlp will find the same profile.
   if (platform === "win32") {
     const appData = process.env.APPDATA || path.join(home, "AppData", "Roaming");
-    candidates.push(path.join(appData, "Mozilla", "Firefox", "profiles.ini"));
+    const localAppData = process.env.LOCALAPPDATA || path.join(home, "AppData", "Local");
+    candidates.push(
+      path.join(appData, "Mozilla", "Firefox", "profiles.ini"),
+      // Microsoft Store build of Firefox.
+      path.join(
+        localAppData, "Packages", "Mozilla.Firefox_n80bbvh6b1yt2",
+        "LocalCache", "Roaming", "Mozilla", "Firefox", "profiles.ini"
+      )
+    );
   } else if (platform === "darwin") {
     candidates.push(
       path.join(home, "Library", "Application Support", "Firefox", "profiles.ini")
     );
   } else {
+    const configHome = process.env.XDG_CONFIG_HOME || path.join(home, ".config");
     candidates.push(
+      path.join(configHome, "mozilla", "firefox", "profiles.ini"), // Firefox 147+ (XDG)
       path.join(home, ".mozilla", "firefox", "profiles.ini"),
+      path.join(home, ".var", "app", "org.mozilla.firefox", "config", "mozilla", "firefox", "profiles.ini"),
+      path.join(home, ".var", "app", "org.mozilla.firefox", ".mozilla", "firefox", "profiles.ini"),
       path.join(home, "snap", "firefox", "common", ".mozilla", "firefox", "profiles.ini")
     );
   }
@@ -60,10 +74,12 @@ async function detectFirefox(): Promise<{ available: boolean; profilesFound: boo
 export async function getSystemStatus(): Promise<SystemStatus> {
   const ytdlpResolved = resolveTool("yt-dlp");
   const ffmpegResolved = resolveTool("ffmpeg");
+  const denoResolved = resolveTool("deno");
 
-  const [ytdlp, ffmpeg, firefox] = await Promise.all([
+  const [ytdlp, ffmpeg, deno, firefox] = await Promise.all([
     probeVersion(ytdlpResolved.command, ["--version"]),
     probeVersion(ffmpegResolved.command, ["-version"]),
+    probeVersion(denoResolved.command, ["--version"]),
     detectFirefox(),
   ]);
 
@@ -84,6 +100,13 @@ export async function getSystemStatus(): Promise<SystemStatus> {
       version: ffmpeg.version?.replace(/^ffmpeg version\s*/i, "").split(" ")[0],
       path: ffmpegResolved.command,
       source: sourceOf(ffmpeg.available, ffmpegResolved.source),
+    },
+    deno: {
+      available: deno.available,
+      // deno --version first line: "deno 2.x.y (stable, release, ...)"
+      version: deno.version?.replace(/^deno\s*/i, "").split(" ")[0],
+      path: denoResolved.command,
+      source: sourceOf(deno.available, denoResolved.source),
     },
     firefox,
     binDir: binDir(),

@@ -5,6 +5,7 @@ import type { ChildProcessWithoutNullStreams } from "node:child_process";
 
 import { runStream, ytDlpBinary, killProcessTree } from "@/lib/ytdlp/exec";
 import { buildDownloadArgs } from "@/lib/ytdlp/download";
+import { jsRuntimeArgs } from "@/lib/tools/paths";
 import { parseProgressLine, overallPercent } from "@/lib/ytdlp/progress";
 import { classifyYtDlpError, type YtDlpError } from "@/lib/ytdlp/errors";
 import { progressBus } from "@/lib/progress/emitter";
@@ -163,6 +164,7 @@ class QueueManager {
     const args = buildDownloadArgs(job.request, {
       outputTemplate: ctx.outputTemplate,
       archivePath: ctx.archivePath,
+      jsRuntimeArgs: jsRuntimeArgs(),
     });
     job.command = `${ytDlpBinary()} ${args.map(quoteArg).join(" ")}`;
 
@@ -172,14 +174,14 @@ class QueueManager {
     const child = runStream(ytDlpBinary(), args, {
       onStdoutLine: (line) => this.handleLine(job, line),
       onStderrLine: (line) => {
-        stderrTail = (stderrTail + "\n" + line).slice(-4000);
+        stderrTail = (stderrTail + "\n" + line).slice(-8000);
         this.handleLine(job, line);
       },
       // A failed spawn emits "error" and then "close" (code null). Capture the
       // classified error here so the single terminal path in onClose reports it
       // instead of re-classifying the (empty) stderr tail.
       onError: (err) => {
-        spawnError = classifyYtDlpError(err, "");
+        spawnError = classifyYtDlpError(err, "", { cookieMode: job.request.cookieMode });
       },
       onClose: (code) => void this.onClose(job, code, stderrTail, spawnError),
     });
@@ -228,7 +230,8 @@ class QueueManager {
     } else {
       // For playlists, --ignore-errors means a non-zero exit may still have
       // downloaded most items; treat it as interrupted rather than failed.
-      const err = spawnError ?? classifyYtDlpError(null, stderrTail);
+      const err =
+        spawnError ?? classifyYtDlpError(null, stderrTail, { cookieMode: job.request.cookieMode });
       if (job.request.kind === "playlist") {
         this.transition(job, "interrupted", { error: err.message });
         await this.recordHistory(job, "interrupted", err.message);

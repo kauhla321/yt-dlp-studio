@@ -8,6 +8,10 @@ export type YtDlpErrorCode =
   | "UNAVAILABLE"
   | "NO_FORMATS"
   | "COOKIE_FAILURE"
+  | "COOKIES_REJECTED"
+  | "AGE_VERIFICATION"
+  | "BOT_CHECK"
+  | "JS_RUNTIME_MISSING"
   | "GEO_BLOCKED"
   | "NETWORK"
   | "PARSE_ERROR"
@@ -24,6 +28,8 @@ export class YtDlpError extends Error {
   }
 }
 
+const BOT_CHECK_RE = /sign in to confirm you(’|'|`)?re not a bot/i;
+
 interface Matcher {
   test: RegExp;
   code: YtDlpErrorCode;
@@ -32,6 +38,13 @@ interface Matcher {
 }
 
 const MATCHERS: Matcher[] = [
+  {
+    // Must run before the age/private matchers: it's also a "sign in" error.
+    test: BOT_CHECK_RE,
+    code: "BOT_CHECK",
+    message: "YouTube is asking to confirm you're not a bot.",
+    hint: "Turn on Cookie Mode while signed in to youtube.com in Firefox, then retry.",
+  },
   {
     test: /private video|this video is private/i,
     code: "PRIVATE_VIDEO",
@@ -55,10 +68,10 @@ const MATCHERS: Matcher[] = [
     message: "No downloadable formats were found for this URL.",
   },
   {
-    test: /could not (find|copy) (the )?(firefox )?cookies|unable to (open|read).*cookie|no such file.*cookies|could not find firefox/i,
+    test: /could not (find|copy) (the )?(firefox )?cookies|unable to (open|read).*cookie|no such file.*cookies|could not find firefox|failed to (decrypt|load) cookies|database is locked/i,
     code: "COOKIE_FAILURE",
     message: "Could not read cookies from Firefox.",
-    hint: "Make sure Firefox is installed, you've signed in at least once, and Firefox is fully closed while downloading.",
+    hint: "Make sure Firefox is installed and you've opened it at least once. If it still fails, fully close Firefox and retry.",
   },
   {
     test: /not available in your (country|location)|geo[- ]?restricted|blocked it in your country/i,
@@ -85,10 +98,30 @@ const MATCHERS: Matcher[] = [
   },
 ];
 
+/** Context about how yt-dlp was invoked, used to tailor the advice. */
+export interface ClassifyContext {
+  /** Whether --cookies-from-browser firefox was passed. */
+  cookieMode?: boolean;
+}
+
+// yt-dlp warnings that explain *why* an error happened. They are only visible
+// because we no longer pass --no-warnings; the final ERROR line alone is often
+// identical with and without cookies ("Sign in to confirm your age").
+const COOKIES_ROTATED = /cookies are no longer valid|cookies have (likely )?been rotated/i;
+const AGE_VERIFICATION_REQUIRED = /requiring account age[- ]verification/i;
+const JS_CHALLENGE_FAILED =
+  /(n challenge|signature) solving failed|no supported javascript runtime|only images are available/i;
+
 /**
  * Convert a spawn error or yt-dlp stderr into a typed, user-friendly error.
+ * `stderr` may include WARNING lines; the ERROR line(s) decide the category
+ * and the warnings refine it (e.g. "cookies were used but rejected").
  */
-export function classifyYtDlpError(spawnErr: unknown, stderr: string): YtDlpError {
+export function classifyYtDlpError(
+  spawnErr: unknown,
+  stderr: string,
+  ctx: ClassifyContext = {}
+): YtDlpError {
   const e = spawnErr as NodeJS.ErrnoException | null;
   if (e?.code === "ENOENT") {
     return new YtDlpError(
@@ -99,17 +132,93 @@ export function classifyYtDlpError(spawnErr: unknown, stderr: string): YtDlpErro
   }
 
   const text = stderr || (spawnErr instanceof Error ? spawnErr.message : "");
-  for (const m of MATCHERS) {
-    if (m.test.test(text)) return new YtDlpError(m.message, m.code, m.hint);
-  }
+  const lines = text.split(/\r?\n/);
+  const errorText = lines.filter((l) => /^\s*ERROR:/i.test(l)).join("\n");
+  const warningText = lines.filter((l) => /^\s*WARNING:/i.test(l)).join("\n");
+
+  // Match on ERROR lines first so a warning like "This video is age-restricted;
+  // some formats may be missing" can't mask the real failure.
+  const base =
+    (errorText && MATCHERS.find((m) => m.test.test(errorText))) ||
+    MATCHERS.find((m) => m.test.test(text)) ||
+    null;
+
+  const refined = refine(base?.code ?? "UNKNOWN", warningText, ctx);
+  if (refined) return refined;
+  if (base) return new YtDlpError(base.message, base.code, base.hint);
 
   // Fall back to the last meaningful ERROR line from yt-dlp, trimmed.
-  const errorLine = text
-    .split(/\r?\n/)
-    .reverse()
-    .find((l) => /error/i.test(l));
+  const errorLine = [...lines].reverse().find((l) => /^\s*ERROR:/i.test(l)) ??
+    [...lines].reverse().find((l) => /error/i.test(l) && !/^\s*WARNING:/i.test(l));
   return new YtDlpError(
-    errorLine?.replace(/^ERROR:\s*/i, "").trim() || "yt-dlp failed for an unknown reason.",
+    errorLine?.replace(/^\s*ERROR:\s*/i, "").trim() || "yt-dlp failed for an unknown reason.",
     "UNKNOWN"
   );
+}
+
+/**
+ * Turn a generic category into the actual cause when the warnings (or the
+ * cookie-mode flag) tell us more. Returns null to keep the base result.
+ */
+function refine(
+  code: YtDlpErrorCode,
+  warnings: string,
+  ctx: ClassifyContext
+): YtDlpError | null {
+  // Hard failures to read the cookie store win over everything else.
+  if (code === "COOKIE_FAILURE") return null;
+
+  const authProblem =
+    code === "AGE_RESTRICTED" || code === "PRIVATE_VIDEO" || code === "BOT_CHECK";
+
+  if (COOKIES_ROTATED.test(warnings) && (authProblem || code === "NO_FORMATS" || code === "UNKNOWN")) {
+    return new YtDlpError(
+      "Firefox's YouTube cookies were read, but YouTube no longer accepts them (they were rotated or you were signed out).",
+      "COOKIES_REJECTED",
+      "Open youtube.com in Firefox and make sure you're signed in, play any video, then fully close Firefox and retry."
+    );
+  }
+
+  if (AGE_VERIFICATION_REQUIRED.test(warnings) && (authProblem || code === "NO_FORMATS" || code === "UNKNOWN")) {
+    return new YtDlpError(
+      "You're signed in, but YouTube requires this account to be age-verified to watch this video.",
+      "AGE_VERIFICATION",
+      "Verify your age on youtube.com with the account signed in to Firefox (or sign in with an account that is already verified), then retry."
+    );
+  }
+
+  if (JS_CHALLENGE_FAILED.test(warnings) && (code === "NO_FORMATS" || code === "UNKNOWN" || authProblem)) {
+    return new YtDlpError(
+      "YouTube needs a JavaScript runtime (deno) to unlock the formats for this video.",
+      "JS_RUNTIME_MISSING",
+      ctx.cookieMode
+        ? "Signed-in (cookie) downloads always need one. Install deno from Settings → tools, then retry."
+        : "Install deno from Settings → tools, then retry."
+    );
+  }
+
+  // Same ERROR with and without cookies — tell the user cookies were tried.
+  if (ctx.cookieMode && code === "AGE_RESTRICTED") {
+    return new YtDlpError(
+      "This video is age-restricted, and the Firefox session didn't unlock it.",
+      "AGE_RESTRICTED",
+      "Cookie mode is already on. Sign in to youtube.com in Firefox with an adult (age-verified) account, play the video once there, then fully close Firefox and retry."
+    );
+  }
+  if (ctx.cookieMode && code === "PRIVATE_VIDEO") {
+    return new YtDlpError(
+      "This video is private, and the Firefox session doesn't have access to it.",
+      "PRIVATE_VIDEO",
+      "Cookie mode is already on. Sign in to youtube.com in Firefox with an account that can watch this video, then retry."
+    );
+  }
+  if (ctx.cookieMode && code === "BOT_CHECK") {
+    return new YtDlpError(
+      "YouTube is asking to confirm you're not a bot, and the Firefox session didn't satisfy it.",
+      "BOT_CHECK",
+      "Sign in to youtube.com in Firefox, play a video there, then fully close Firefox and retry."
+    );
+  }
+
+  return null;
 }

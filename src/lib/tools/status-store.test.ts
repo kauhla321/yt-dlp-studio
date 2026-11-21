@@ -24,6 +24,7 @@ function system(ytdlpAvail: boolean, ffmpegAvail = false): SystemStatus {
       version: ffmpegAvail ? "8.1" : undefined,
       source: ffmpegAvail ? "local" : "none",
     },
+    deno: { available: false, source: "none" },
     firefox: { available: false, profilesFound: false },
     binDir: "C:\\app",
     canInstall: true,
@@ -36,6 +37,7 @@ function toolsResponse(state: ToolInstallStatus["state"], ytdlpAvail: boolean, p
     installs: {
       ytdlp: { tool: "ytdlp", state, percent },
       ffmpeg: IDLE_FFMPEG,
+      deno: { tool: "deno", state: "idle", percent: 0 } as ToolInstallStatus,
     },
   };
 }

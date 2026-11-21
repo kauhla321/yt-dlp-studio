@@ -219,6 +219,8 @@ export type ToolSource = "local" | "path" | "none";
 export interface SystemStatus {
   ytdlp: { available: boolean; version?: string; path?: string; source: ToolSource };
   ffmpeg: { available: boolean; version?: string; path?: string; source: ToolSource };
+  /** JavaScript runtime yt-dlp needs for YouTube's challenges (required with cookies). */
+  deno: { available: boolean; version?: string; path?: string; source: ToolSource };
   firefox: { available: boolean; profilesFound: boolean };
   /** Folder the app looks in / installs tools into (next to the portable exe). */
   binDir: string;
@@ -227,7 +229,7 @@ export interface SystemStatus {
 }
 
 /** Which downloadable tool an install request targets. */
-export type ToolName = "ytdlp" | "ffmpeg";
+export type ToolName = "ytdlp" | "ffmpeg" | "deno";
 
 export type ToolInstallState =
   | "idle"

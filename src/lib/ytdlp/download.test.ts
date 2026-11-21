@@ -20,7 +20,6 @@ describe("buildDownloadArgs", () => {
     );
     expect(args).toEqual([
       "--newline",
-      "--no-warnings",
       "--progress-template",
       PROGRESS_TEMPLATE,
       "-o",
@@ -88,5 +87,18 @@ describe("buildDownloadArgs", () => {
     );
     expect(args).toContain("--embed-subs");
     expect(args).toContain("--write-auto-subs");
+  });
+});
+
+describe("buildDownloadArgs js runtime", () => {
+  it("passes an explicit deno path through", () => {
+    const args = buildDownloadArgs(
+      { url: "https://example.com/v", kind: "video", type: "video", cookieMode: true },
+      { ...CTX, jsRuntimeArgs: ["--js-runtimes", "deno:C:\\app\\deno.exe"] }
+    );
+    const i = args.indexOf("--js-runtimes");
+    expect(i).toBeGreaterThan(-1);
+    expect(args[i + 1]).toBe("deno:C:\\app\\deno.exe");
+    expect(args).not.toContain("--no-warnings");
   });
 });

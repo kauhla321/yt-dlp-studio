@@ -19,7 +19,14 @@ export function ToolsSection() {
     );
   }
 
-  const rows: { tool: ToolName; label: string; available: boolean; version?: string; source: string }[] = [
+  const rows: {
+    tool: ToolName;
+    label: string;
+    available: boolean;
+    version?: string;
+    source: string;
+    note?: string;
+  }[] = [
     {
       tool: "ytdlp",
       label: "yt-dlp",
@@ -33,6 +40,14 @@ export function ToolsSection() {
       available: system.ffmpeg.available,
       version: system.ffmpeg.version,
       source: system.ffmpeg.source === "local" ? "app folder" : system.ffmpeg.source === "path" ? "system path" : "not found",
+    },
+    {
+      tool: "deno",
+      label: "deno",
+      available: system.deno.available,
+      version: system.deno.version,
+      source: system.deno.source === "local" ? "app folder" : system.deno.source === "path" ? "system path" : "not found",
+      note: "javascript runtime · required for youtube with cookies",
     },
   ];
 
@@ -51,6 +66,7 @@ export function ToolsSection() {
               <span className="w-[70px] shrink-0 text-sm font-semibold">{r.label}</span>
               <span className="flex-1 text-xs text-ink-muted">
                 {r.available ? `${r.version ?? "installed"} · ${r.source}` : "not found"}
+                {r.note && <span className="block text-[11px] text-ink-faint">{r.note}</span>}
               </span>
               {system.canInstall ? (
                 <Button size="sm" variant="secondary" loading={busy} onClick={() => install(r.tool)}>

@@ -22,7 +22,9 @@ Built with **Next.js 15 (App Router) · TypeScript · Tailwind CSS · Node.js**.
 - **Playlists** — best quality (`bv*+ba/b`) or audio-only for every item, saved into a folder
   named after the playlist.
 - **Cookie Mode** — `--cookies-from-browser firefox` for authenticated / age-restricted / private
-  media, with Firefox detection and friendly errors.
+  media, with Firefox detection and errors that say *why* cookies didn't help (signed out /
+  rotated cookies, account not age-verified, missing JS runtime). For YouTube, cookie mode also
+  needs **deno** (see below).
 - **Real-time progress** — status, speed, ETA, progress bar, and current file via Server-Sent Events.
 - **Reliable cancel** — cancelling kills the whole yt-dlp/ffmpeg process tree (no orphaned
   downloads that keep running and then error out).
@@ -64,11 +66,19 @@ install the tools with your package manager.)
 
 Firefox is optional, used only for **Cookie Mode**.
 
+**deno** (optional, but required for YouTube with Cookie Mode) is the JavaScript runtime yt-dlp
+uses to solve YouTube's player challenges. When cookies are sent, yt-dlp switches YouTube to
+signed-in web clients whose formats are all locked behind those challenges, so without deno a
+cookie-mode download fails with "no formats" or keeps reporting the video as age-restricted.
+Install it from **Settings → tools** (Windows) or put `deno` on your `PATH`. A copy next to the app
+is passed to yt-dlp via `--js-runtimes deno:<path>`.
+
 Environment overrides:
 
 ```bash
 YT_DLP_PATH=/path/to/yt-dlp      # explicit binary location
 FFMPEG_PATH=/path/to/ffmpeg
+DENO_PATH=/path/to/deno          # JS runtime for YouTube cookie mode
 YTP_BIN_DIR=/folder/to/search    # where tools are looked up / installed (default: next to the exe)
 YTP_DATA_DIR=/custom/state/dir   # history / settings / archives (default: app userData, or ./data in dev)
 ```

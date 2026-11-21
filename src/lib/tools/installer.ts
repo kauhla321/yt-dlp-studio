@@ -18,6 +18,11 @@ const YTDLP_URL =
 const FFMPEG_ZIP_URL =
   "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-win64-gpl.zip";
 
+// deno: the JavaScript runtime yt-dlp uses to solve YouTube's challenges.
+// Required for signed-in (cookie mode) YouTube downloads.
+const DENO_ZIP_URL =
+  "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip";
+
 /** In-memory install state, shared across requests / hot reloads. */
 class InstallerState {
   private status = new Map<ToolName, ToolInstallStatus>();
@@ -85,6 +90,7 @@ export function startInstall(tool: ToolName): ToolInstallStatus {
 
 async function runInstall(tool: ToolName) {
   if (tool === "ytdlp") await installYtDlp();
+  else if (tool === "deno") await installDeno();
   else await installFfmpeg();
 }
 
@@ -105,7 +111,7 @@ async function download(url: string, dest: string, tool: ToolName) {
     if (total > 0) {
       // Reserve the last 10% for extraction on tools that need it.
       const pct = Math.min(100, Math.round((received / total) * 100));
-      state.set(tool, { percent: tool === "ffmpeg" ? Math.round(pct * 0.85) : pct });
+      state.set(tool, { percent: tool === "ytdlp" ? pct : Math.round(pct * 0.85) });
     }
   });
   await pipeline(body, out);
@@ -138,6 +144,29 @@ async function installFfmpeg() {
 
     const dest = path.join(installDir, "ffmpeg.exe");
     state.set("ffmpeg", { state: "done", percent: 100, message: "ffmpeg installed.", path: dest });
+  } finally {
+    await fsp.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
+async function installDeno() {
+  const installDir = pickInstallDir();
+  const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), "ytp-deno-"));
+  const zipPath = path.join(tmpDir, "deno.zip");
+
+  try {
+    state.set("deno", { state: "downloading", message: "Downloading deno…" });
+    await download(DENO_ZIP_URL, zipPath, "deno");
+
+    state.set("deno", { state: "extracting", percent: 90, message: "Extracting deno…" });
+    await fsp.mkdir(installDir, { recursive: true });
+    const extracted = await extractEntries(zipPath, ["deno.exe"], installDir);
+    if (!extracted.includes("deno.exe")) {
+      throw new Error("deno.exe not found in the downloaded archive.");
+    }
+
+    const dest = path.join(installDir, "deno.exe");
+    state.set("deno", { state: "done", percent: 100, message: "deno installed.", path: dest });
   } finally {
     await fsp.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
   }

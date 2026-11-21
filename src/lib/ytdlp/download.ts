@@ -6,6 +6,8 @@ export interface BuildContext {
   outputTemplate: string;
   /** Path to the --download-archive file (playlists / resumable jobs). */
   archivePath?: string;
+  /** Extra args enabling a JS runtime (see jsRuntimeArgs). */
+  jsRuntimeArgs?: string[];
 }
 
 /**
@@ -16,11 +18,11 @@ export interface BuildContext {
 export function buildDownloadArgs(req: DownloadRequest, ctx: BuildContext): string[] {
   const args: string[] = [
     "--newline",
-    "--no-warnings",
     "--progress-template",
     PROGRESS_TEMPLATE,
     "-o",
     ctx.outputTemplate,
+    ...(ctx.jsRuntimeArgs ?? []),
   ];
 
   // Cookie mode: authenticate via the user's Firefox profile.

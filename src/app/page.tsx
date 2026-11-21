@@ -55,7 +55,7 @@ export default function HomePage() {
   const [outputDirs, setOutputDirs] = useState({ video: "", playlist: "" });
 
   const { snapshots } = useProgress();
-  const { system } = useTools();
+  const { system, installs, installing, install } = useTools();
 
   // Restore the screen (url + analysis + selection) from a previous visit, then
   // mirror changes back so navigating away and returning keeps everything.
@@ -382,14 +382,36 @@ export default function HomePage() {
           <p className="px-1 text-xs text-ink-faint">{modeHint(mode)} · press enter to analyze</p>
         )}
 
-        {cookieMode && analysis && (
+        {cookieMode && (
           <div className="flex items-center gap-2 px-1 text-xs text-ink-faint">
             <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-done" />
             <span>
               cookies from firefox (profile detected) ·{" "}
-              <span className="text-ink-muted">--cookies-from-browser firefox</span> · close firefox
-              if its cookie file is locked
+              <span className="text-ink-muted">--cookies-from-browser firefox</span> · be signed in
+              to youtube.com in firefox
             </span>
+          </div>
+        )}
+
+        {cookieMode && system && !system.deno.available && (
+          <div className="flex items-center gap-3 rounded-control border border-warn-border bg-warn-bg px-3.5 py-2.5">
+            <AlertIcon className="h-4 w-4 shrink-0 text-video" />
+            <p className="flex-1 text-xs leading-relaxed text-ink-muted">
+              <span className="text-ink">deno is missing.</span> youtube downloads with cookies need
+              this javascript runtime — without it formats are hidden and age-restricted videos
+              keep failing.
+            </p>
+            {system.canInstall ? (
+              <Button
+                size="sm"
+                loading={installing === "deno" || installs?.deno?.state === "downloading" || installs?.deno?.state === "extracting"}
+                onClick={() => install("deno")}
+              >
+                install deno
+              </Button>
+            ) : (
+              <span className="shrink-0 text-xs text-ink-muted">install deno manually</span>
+            )}
           </div>
         )}
 

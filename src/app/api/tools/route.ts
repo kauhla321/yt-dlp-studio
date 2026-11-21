@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 // ffmpeg's archive download can take a while on slow links.
 export const maxDuration = 300;
 
-const TOOLS: ToolName[] = ["ytdlp", "ffmpeg"];
+const TOOLS: ToolName[] = ["ytdlp", "ffmpeg", "deno"];
 
 // The system probe spawns subprocesses and is by far the slow part of this
 // endpoint (~1s+ per call), and the UI polls it every second during installs.
@@ -23,6 +23,7 @@ export const GET = withErrorHandling(async () => {
   const installs = {
     ytdlp: getInstallStatus("ytdlp"),
     ffmpeg: getInstallStatus("ffmpeg"),
+    deno: getInstallStatus("deno"),
   };
   const busy = Object.values(installs).some(
     (s) => s.state === "downloading" || s.state === "extracting"
@@ -43,11 +44,11 @@ export const GET = withErrorHandling(async () => {
   return ok({ system, installs });
 });
 
-/** POST /api/tools — body: { tool } — start installing yt-dlp or ffmpeg. */
+/** POST /api/tools — body: { tool } — start installing yt-dlp, ffmpeg or deno. */
 export const POST = withErrorHandling(async (req: NextRequest) => {
   const body = (await req.json().catch(() => ({}))) as { tool?: string };
   if (!body.tool || !TOOLS.includes(body.tool as ToolName)) {
-    return fail("Specify which tool to install: 'ytdlp' or 'ffmpeg'.", 400);
+    return fail("Specify which tool to install: 'ytdlp', 'ffmpeg' or 'deno'.", 400);
   }
   const status = startInstall(body.tool as ToolName);
   return ok(status, { status: 202 });

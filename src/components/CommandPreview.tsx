@@ -30,7 +30,7 @@ function buildPreviewLines(
   ];
   const add = (text: string, color = "#a0a0a0") => lines.push({ text, color, indent: true });
 
-  add("--newline --no-warnings --progress-template …", "#5a5a5a");
+  add("--newline --progress-template …", "#5a5a5a");
   add("-o \"" + outputTemplate + "\"");
   if (cookieMode) add("--cookies-from-browser firefox");
   add("--no-playlist");

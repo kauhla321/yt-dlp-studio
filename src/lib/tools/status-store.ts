@@ -126,7 +126,7 @@ function stopPolling() {
   }
 }
 
-const TOOL_LABEL: Record<ToolName, string> = { ytdlp: "yt-dlp", ffmpeg: "ffmpeg" };
+const TOOL_LABEL: Record<ToolName, string> = { ytdlp: "yt-dlp", ffmpeg: "ffmpeg", deno: "deno" };
 
 async function tick() {
   if (ticking) return;
@@ -151,8 +151,7 @@ async function tick() {
     const st = res?.installs?.[tool]?.state;
     if (!res || !st) return; // transient fetch failure → keep polling
 
-    const available =
-      tool === "ytdlp" ? res.system.ytdlp.available : res.system.ffmpeg.available;
+    const available = res.system[tool].available;
 
     if (st === "error") {
       // Error message already lives in installs[tool].message (shared state).

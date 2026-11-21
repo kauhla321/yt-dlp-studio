@@ -38,4 +38,84 @@ describe("classifyYtDlpError", () => {
     expect(err.code).toBe("UNKNOWN");
     expect(err.message).toBe("yt-dlp failed for an unknown reason.");
   });
+
+  describe("cookie mode", () => {
+    // Real yt-dlp 2026.10 output for an age-restricted video (cookies off).
+    const AGE_ERR =
+      "ERROR: [youtube] 4UoC0ppf4Lo: Sign in to confirm your age. This video may be inappropriate for some users. Use --cookies-from-browser or --cookies for the authentication.";
+
+    it("tells the user to enable cookie mode when it is off", () => {
+      const err = classifyYtDlpError(null, AGE_ERR, { cookieMode: false });
+      expect(err.code).toBe("AGE_RESTRICTED");
+      expect(err.hint).toMatch(/enable cookie mode/i);
+    });
+
+    it("does not tell the user to enable cookie mode when it is already on", () => {
+      const err = classifyYtDlpError(null, AGE_ERR, { cookieMode: true });
+      expect(err.code).toBe("AGE_RESTRICTED");
+      expect(err.hint).toMatch(/already on/i);
+      expect(err.hint).not.toMatch(/enable cookie mode/i);
+    });
+
+    it("explains rotated / signed-out cookies from the warnings", () => {
+      // Real yt-dlp output when the Firefox cookies are no longer accepted.
+      const stderr = [
+        "WARNING: [youtube] The provided YouTube account cookies are no longer valid. They have likely been rotated in the browser as a security measure.",
+        "ERROR: [youtube] 4UoC0ppf4Lo: Sorry, this content is age-restricted. This video is age-restricted and only available on YouTube",
+      ].join("\n");
+      const err = classifyYtDlpError(null, stderr, { cookieMode: true });
+      expect(err.code).toBe("COOKIES_REJECTED");
+    });
+
+    it("explains account age-verification", () => {
+      const stderr = [
+        "[youtube] 4UoC0ppf4Lo: This video is age-restricted and YouTube is requiring account age-verification; some formats may be missing",
+        "WARNING: [youtube] 4UoC0ppf4Lo: This video is age-restricted and YouTube is requiring account age-verification; some formats may be missing",
+        "ERROR: [youtube] 4UoC0ppf4Lo: Requested format is not available. Use --list-formats for a list of available formats",
+      ].join("\n");
+      const err = classifyYtDlpError(null, stderr, { cookieMode: true });
+      expect(err.code).toBe("AGE_VERIFICATION");
+    });
+
+    it("points at the missing JS runtime when challenge solving failed", () => {
+      const stderr = [
+        "WARNING: [youtube] 4UoC0ppf4Lo: n challenge solving failed: Some formats may be missing. Ensure you have a supported JavaScript runtime and challenge solver script distribution installed.",
+        "WARNING: Only images are available for download. Use --list-formats to see them",
+        "ERROR: [youtube] 4UoC0ppf4Lo: Requested format is not available. Use --list-formats for a list of available formats",
+      ].join("\n");
+      const err = classifyYtDlpError(null, stderr, { cookieMode: true });
+      expect(err.code).toBe("JS_RUNTIME_MISSING");
+      expect(err.hint).toMatch(/deno/i);
+    });
+
+    it("lets ERROR lines win over an age warning", () => {
+      const stderr = [
+        "WARNING: [youtube] x: This video is age-restricted; some formats may be missing without authentication.",
+        "ERROR: [youtube] x: Video unavailable",
+      ].join("\n");
+      expect(classifyYtDlpError(null, stderr).code).toBe("UNAVAILABLE");
+    });
+
+    it("classifies the bot check separately from age restriction", () => {
+      const err = classifyYtDlpError(
+        null,
+        "ERROR: [youtube] x: Sign in to confirm you’re not a bot. Use --cookies-from-browser or --cookies for the authentication."
+      );
+      expect(err.code).toBe("BOT_CHECK");
+    });
+
+    it("keeps a cookie read failure as a cookie failure", () => {
+      const err = classifyYtDlpError(
+        null,
+        "WARNING: cookies are no longer valid\nERROR: could not find firefox cookies database in C:\\Users\\x",
+        { cookieMode: true }
+      );
+      expect(err.code).toBe("COOKIE_FAILURE");
+    });
+
+    it("does not report a WARNING line as the fallback message", () => {
+      const err = classifyYtDlpError(null, "WARNING: some error-ish warning\nERROR: boom");
+      expect(err.message).toBe("boom");
+    });
+  });
 });
