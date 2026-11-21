@@ -163,7 +163,13 @@ function createWindow() {
 // page (not the splash/error data: URLs or anything navigated to externally).
 ipcMain.handle("ytp:pick-folder", async (event, defaultPath) => {
   const frameUrl = event.senderFrame ? event.senderFrame.url : "";
-  if (!appUrl || !frameUrl.startsWith(appUrl)) return null;
+  let sameOrigin = false;
+  try {
+    sameOrigin = !!appUrl && new URL(frameUrl).origin === new URL(appUrl).origin;
+  } catch {
+    sameOrigin = false;
+  }
+  if (!sameOrigin) return null;
   const owner = BrowserWindow.fromWebContents(event.sender) || mainWindow;
   const result = await dialog.showOpenDialog(owner, {
     title: "Choose download folder",

@@ -37,6 +37,8 @@ tsconfig.tsbuildinfo
 # dev tool binaries (resolved next to the app folder at runtime)
 /yt-dlp.exe
 /ffmpeg.exe
+/ffprobe.exe
+/deno.exe
 
 # agent tooling (not project content)
 /.claude/

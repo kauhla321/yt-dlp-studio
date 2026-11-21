@@ -109,8 +109,13 @@ export interface ClassifyContext {
 // identical with and without cookies ("Sign in to confirm your age").
 const COOKIES_ROTATED = /cookies are no longer valid|cookies have (likely )?been rotated/i;
 const AGE_VERIFICATION_REQUIRED = /requiring account age[- ]verification/i;
-const JS_CHALLENGE_FAILED =
-  /(n challenge|signature) solving failed|no supported javascript runtime|only images are available/i;
+// A challenge that actually failed (formats were dropped because of it)...
+const JS_CHALLENGE_FAILED = /(n challenge|signature) solving failed|only images are available/i;
+// ...versus yt-dlp merely noting that no runtime is installed. That note is
+// printed on every anonymous YouTube request without deno, even ones that
+// fail for unrelated reasons (e.g. age-restriction with cookies off), so on
+// its own it only explains a "no formats" failure.
+const NO_JS_RUNTIME = /no supported javascript runtime/i;
 
 /**
  * Convert a spawn error or yt-dlp stderr into a typed, user-friendly error.
@@ -187,7 +192,11 @@ function refine(
     );
   }
 
-  if (JS_CHALLENGE_FAILED.test(warnings) && (code === "NO_FORMATS" || code === "UNKNOWN" || authProblem)) {
+  const jsCause =
+    (JS_CHALLENGE_FAILED.test(warnings) &&
+      (code === "NO_FORMATS" || code === "UNKNOWN" || (authProblem && ctx.cookieMode))) ||
+    (NO_JS_RUNTIME.test(warnings) && code === "NO_FORMATS");
+  if (jsCause) {
     return new YtDlpError(
       "YouTube needs a JavaScript runtime (deno) to unlock the formats for this video.",
       "JS_RUNTIME_MISSING",

@@ -88,6 +88,25 @@ describe("classifyYtDlpError", () => {
       expect(err.hint).toMatch(/deno/i);
     });
 
+    it("still says 'enable cookie mode' when deno is merely absent (cookies off)", () => {
+      // Real yt-dlp 2026.10 output: anonymous request, no JS runtime installed.
+      const stderr = [
+        "WARNING: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing.",
+        AGE_ERR,
+      ].join("\n");
+      const err = classifyYtDlpError(null, stderr, { cookieMode: false });
+      expect(err.code).toBe("AGE_RESTRICTED");
+      expect(err.hint).toMatch(/enable cookie mode/i);
+    });
+
+    it("blames the missing runtime when no formats were found without one", () => {
+      const stderr = [
+        "WARNING: [youtube] No supported JavaScript runtime could be found.",
+        "ERROR: [youtube] x: Requested format is not available. Use --list-formats for a list of available formats",
+      ].join("\n");
+      expect(classifyYtDlpError(null, stderr).code).toBe("JS_RUNTIME_MISSING");
+    });
+
     it("lets ERROR lines win over an age warning", () => {
       const stderr = [
         "WARNING: [youtube] x: This video is age-restricted; some formats may be missing without authentication.",
