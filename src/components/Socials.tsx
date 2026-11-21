@@ -7,10 +7,10 @@ const ICONS: Record<SocialKind, typeof GithubIcon> = {
   website: GlobeIcon,
 };
 
-/** Round icon buttons for the author's links (open in the system browser). */
-export function SocialIcons() {
+/** Labeled pill links for the author's socials (home screen intro). */
+export function SocialPills() {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex flex-wrap items-center justify-center gap-2">
       {SOCIALS.map((s) => {
         const Icon = ICONS[s.kind];
         return (
@@ -19,11 +19,11 @@ export function SocialIcons() {
             href={s.url}
             target="_blank"
             rel="noreferrer"
-            aria-label={s.label}
             title={s.url.replace(/^https?:\/\//, "")}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-ink-muted no-underline transition-colors duration-150 hover:bg-raised hover:text-ink"
+            className="flex items-center gap-2 rounded-full border border-[#232323] bg-surface px-3.5 py-1.5 text-xs text-ink-muted no-underline transition-colors duration-150 hover:border-[#3a3a3a] hover:text-ink"
           >
-            <Icon className="h-[15px] w-[15px]" />
+            <Icon className="h-3.5 w-3.5" />
+            {s.label}
           </a>
         );
       })}

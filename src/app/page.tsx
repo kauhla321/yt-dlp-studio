@@ -12,7 +12,7 @@ import { SubtitleOptions, type SubtitleConfig } from "@/components/SubtitleOptio
 import { PlaylistPanel, type PlaylistMode } from "@/components/PlaylistPanel";
 import { DownloadQueue } from "@/components/DownloadQueue";
 import { SaveLocation } from "@/components/SaveLocation";
-import { SocialIcons } from "@/components/Socials";
+import { SocialPills } from "@/components/Socials";
 import { ReadyCard, type PrimarySelection } from "@/components/CommandPreview";
 import { Button, IconButton, cn } from "@/components/ui/primitives";
 import { SearchIcon, AlertIcon, ArrowDownIcon, XIcon } from "@/components/ui/icons";
@@ -320,12 +320,7 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto flex min-h-full w-full max-w-[880px] flex-col items-center px-4 pb-10 pt-3">
-      <div className="relative flex w-full items-center justify-between gap-3 py-1.5">
-        <div className="flex items-center gap-2.5 pl-1">
-          <span className="text-[15px] font-semibold tracking-tight">yt-dlp studio</span>
-          <span className="h-4 w-px bg-raised" aria-hidden="true" />
-          <SocialIcons />
-        </div>
+      <div className="relative flex w-full items-center justify-end py-1.5">
         <a
           href="#queue"
           aria-label={`download queue, ${runningCount} running`}
@@ -341,7 +336,20 @@ export default function HomePage() {
       </div>
 
       <div className="flex w-full max-w-[720px] flex-1 flex-col gap-2.5 pt-3">
-        {!analysis && <div className="flex-1" />}
+        {!analysis && (
+          // The empty canvas above the link box doubles as the app's intro.
+          <div className="flex flex-1 flex-col items-center justify-center gap-4 pb-8 pt-4 text-center">
+            <span className="font-mono text-[13px] text-ink-faint" aria-hidden="true">
+              &gt;_
+            </span>
+            <h1 className="text-[34px] font-semibold leading-none tracking-tight">yt-dlp studio</h1>
+            <p className="max-w-[560px] text-[13px] leading-relaxed text-ink-muted">
+              video, audio &amp; subtitles from any link · a desktop app for{" "}
+              <span className="text-ink">yt-dlp</span>
+            </p>
+            <SocialPills />
+          </div>
+        )}
 
         <SystemBanner onReady={() => setAnalyzeError(null)} />
 
